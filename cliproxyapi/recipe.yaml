@@ -1,0 +1,34 @@
+context:
+  git_url: https://github.com/router-for-me/CLIProxyAPI.git
+  git_tag: v6.2.2
+  name: ${{ git_url | split('/') | last | split('.') | first | lower }}
+  version: ${{ git_tag[1:] }}
+  build_number: 0
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  git: ${{ git_url }}
+  tag: ${{ git_tag }}
+
+build:
+  number: ${{ build_number }}
+  script:
+    # 使用 go-nocgo 编译器生成静态链接的二进制文件
+    # 参考上游安装指令: go build -o cli-proxy-api ./cmd/server
+    - go build -o $PREFIX/bin/cliproxyapi -ldflags="-s -w" ./cmd/server
+
+requirements:
+  build:
+    - ${{ compiler('go-nocgo') }}
+
+tests:
+  - script:
+      - cliproxyapi --help
+
+about:
+  summary: "A proxy server that provides OpenAI/Gemini/Claude/Codex compatible API interfaces for CLI"
+  homepage: https://github.com/router-for-me/CLIProxyAPI
+  license: MIT

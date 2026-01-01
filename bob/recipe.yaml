@@ -1,0 +1,27 @@
+context:
+  git_url: https://github.com/MordechaiHadad/bob
+  git_tag: v4.1.2
+  name: ${{ git_url | split('/') | last | split('.') | last }}
+  version: ${{ git_tag[1:] }}
+  build_number: 0
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  - git: ${{ git_url }}
+    tag: ${{ git_tag }}
+
+build:
+  number: ${{ build_number }}
+  script:
+    - cargo install --root $PREFIX --path .
+
+requirements:
+  build:
+    - ${{ compiler("rust") }}
+
+tests:
+  - script:
+      - bob --help

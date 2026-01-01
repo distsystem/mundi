@@ -1,0 +1,66 @@
+context:
+  name: ctranslate2
+  git_url: https://github.com/OpenNMT/CTranslate2.git
+  git_tag: v4.6.0
+  build_number: 1
+
+package:
+  name: ${{ name }}
+  version: ${{ git_tag[1:] }}
+
+source:
+  - git: ${{ git_url }}
+    tag: ${{ git_tag }}
+
+build:
+  number: ${{ build_number }}
+  string: py${{ python | version_to_buildstring }}_cuda${{ cuda | version_to_buildstring }}_${{ hash }}
+  script:
+    content:
+      - |
+        export MAX_JOBS=$(($CPU_COUNT / 2 > ${{ max_build_jobs }} ? ${{ max_build_jobs }} : $CPU_COUNT / 2 ))
+      - |
+        export CMAKE_ARGS="$CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=$PREFIX -DOPENMP_RUNTIME=COMP -DWITH_MKL=ON -DWITH_CUDA=ON -DWITH_CUDNN=ON -DMKL_INCLUDE_DIR=$PREFIX/include"
+      - export PATH="$PATH:$BUILD_PREFIX/nvvm/bin"
+      - cmake -B build $CMAKE_ARGS -DCUDA_ARCH_LIST='8.0 9.0+PTX'
+      - cmake --build build -j $MAX_JOBS
+      - cmake --install build
+      - LIBRARY_PATH="$SRC_DIR/build" pip install ./python -vv
+    env:
+      CUDA_HOME: $BUILD_PREFIX
+      VERBOSE: "1"
+      CTRANSLATE2_ROOT: $PREFIX
+      CMAKE_GENERATOR: "Ninja"
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - ${{ stdlib("c") }}
+    - ${{ compiler('cuda') }}
+    - cmake <4
+    - ninja
+  host:
+    - cuda-cudart-dev ${{ cuda }}
+    - libcublas-dev
+    - libcurand-dev
+    - cudnn
+    - python
+    - pip
+    - mkl-devel
+    - mkl-static
+    - setuptools
+    - pybind11
+  run:
+    - python
+    - cuda
+    - numpy
+    - pyyaml
+    - setuptools
+  ignore_run_exports:
+    by_name:
+      - mkl
+tests:
+  - python:
+      imports:
+        - ctranslate2

@@ -1,0 +1,35 @@
+context:
+  name: "ml-collections"
+  git_url: https://github.com/google/ml_collections.git
+  git_tag: v1.1.0
+  # torch_version: ${{ pytorch | replace('.', '') }}
+
+package:
+  name: ${{ name }}
+  version: ${{ git_tag[1:] }}
+
+source:
+  - git: ${{ git_url }}
+    tag: ${{ git_tag }}
+
+build:
+  noarch: python
+  script:
+    - pip install . -vv
+    # - $PYTHON setup.py install
+
+requirements:
+  host:
+    - python
+    - setuptools
+    - flit-core
+    - pip
+  run:
+    - absl-py
+    - contextlib2
+    - six
+    - pyyaml
+tests:
+  - python:
+      imports:
+        - ml_collections

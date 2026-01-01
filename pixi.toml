@@ -1,0 +1,92 @@
+[workspace]
+authors = ["fecet <xiezej@gmail.com>"]
+channels = [
+  "https://prefix.dev/brads-forge",
+  "https://repo.prefix.dev/meta-forge",
+  "conda-forge",
+]
+description = "Add a short description here"
+name = "mundi"
+platforms = ["linux-64"]
+version = "0.1.0"
+
+[tasks]
+# Version management
+update = "meta version"
+
+# Authentication with prefix.dev
+auth = "pixi auth login prefix.dev --token $PREFIX_API_KEY"
+
+# Initialize cache directories
+cache = "mkdir -p $HOME/.cache/ccache && mkdir -p $HOME/.cache/sccache && (ccache --max-size=100G --set-config=keep_local_storage=true || true) && (sccache --start-server || true)"
+
+[tasks.build]
+cmd = "meta build {{package}}"
+args = ["package"]
+
+[tasks.build-upload]
+cmd = "meta build {{package}} --upload"
+args = ["package"]
+
+[tasks.build-dev]
+cmd = "meta build --dev {{package}}"
+args = ["package"]
+
+[tasks.build-sandbox]
+cmd = "meta build --sandbox {{package}}"
+args = ["package"]
+
+[tasks.build-dry]
+cmd = "meta build --dry-run {{package}}"
+args = ["package"]
+
+[tasks.clean]
+cmd = "meta clean {{package}}"
+args = ["package"]
+
+[tasks.build-force]
+cmd = "meta build {{package}} --skip-existing none"
+depends-on = [{ task = "clean", args = ["{{package}}"] }]
+args = ["package"]
+
+
+[tasks.upload]
+cmd = "meta upload"
+
+[tasks.index]
+cmd = "rattler-index s3 s3://pytorch"
+
+[tasks.delete]
+cmd = "meta delete --package {{package}}"
+args = ["package"]
+
+[tasks.sync]
+cmd = "meta sync"
+depends-on = ["cache"]
+
+[tasks.clean-output]
+cmd = "rm -rf output/linux-64 output/noarch output/broken"
+
+[tasks.ctr]
+
+[dependencies]
+rattler-build = "*"
+py-rattler-build = "*"
+gh = "*"
+patch = ">=2.7.6,<3"
+rattler-index = "*"
+pulumi = "*"
+
+[pypi-dependencies]
+meta = { git = "https://github.com/distsystem/meta-forge" }
+
+[activation.env]
+RATTLER_BUILD_LOG_STYLE = "plain"
+SCCACHE_CACHE_SIZE = "100G"
+CCACHE_DIR = "$HOME/.cache/ccache"
+CCACHE_KEEP_LOCAL_STORAGE = "TRUE"
+CONDA_OVERRIDE_CUDA = "12.9"
+S3_REGION = "us-east-1"
+S3_FORCE_PATH_STYLE = "true"
+RATTLER_BUILD_COLOR = "never"
+RATTLER_SHARDED = "false"

@@ -1,0 +1,42 @@
+context:
+  git_url: https://github.com/opencontainers/runc.git
+  git_tag: v1.3.0
+
+package:
+  name: runc
+  version: ${{ git_tag[1:] }}
+
+source:
+  - git: ${{ git_url }}
+    tag: ${{ git_tag }}
+
+build:
+  number: 2
+  dynamic_linking:
+    binary_relocation: false
+  script:
+    - export BUILDTAGS='seccomp apparmor'
+    - export GOFLAGS="-trimpath -mod=readonly -modcacherw"
+    - export CGO_CPPFLAGS="${CPPFLAGS}"
+    - export CGO_CFLAGS="${CFLAGS}"
+    - export CGO_CXXFLAGS="${CXXFLAGS}"
+    - export CGO_LDFLAGS="${LDFLAGS}"
+    - make BINDIR="${PREFIX}/bin"
+    - make BINDIR="${PREFIX}/bin" install
+
+requirements:
+  build:
+    - ${{ compiler('go-cgo') }}
+    - ${{ compiler('c') }}
+    - go-licenses
+    - make
+    - pkg-config
+  host:
+    - libseccomp
+  run:
+    - libseccomp
+
+tests:
+  - script:
+      - runc --help
+      - runc --version

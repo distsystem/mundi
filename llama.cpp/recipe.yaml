@@ -1,0 +1,50 @@
+context:
+  name: llama.cpp
+  git_url: https://github.com/ggml-org/llama.cpp.git
+  git_tag: "b6199"
+  build_number: 0
+
+package:
+  name: ${{ name }}
+  version: 0.0.${{ git_tag[1:] }}
+
+source:
+  - git: ${{ git_url }}
+    tag: ${{ git_tag }}
+
+build:
+  number: ${{ build_number }}
+  string: cuda${{ cuda | version_to_buildstring }}_${{ hash }}_${{ build_number }}
+  script:
+    - |
+      export MAX_JOBS=$(($CPU_COUNT / 2 > ${{ max_build_jobs }} ? ${{ max_build_jobs }} : $CPU_COUNT / 2 ))
+    - cmake -S . -B build -G Ninja $CMAKE_ARGS -DGGML_CUDA=ON -DBUILD_SHARED_LIBS=ON -DLLAMA_BUILD_TESTS=OFF -DCMAKE_CUDA_ARCHITECTURES="${{ CMAKE_CUDA_ARCHITECTURES }}"
+    - cmake --build build --config Release
+    - cmake --install build
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - ${{ stdlib("c") }}
+    - ${{ compiler('cuda') }}
+    - cmake
+    - git
+    - ninja
+    - pkgconfig
+    - sccache
+  host:
+    - cuda-libraries-dev =${{ cuda_compiler_version }}
+    - curl
+  run:
+    - curl
+    - ${{ pin_compatible("cuda-libraries-dev", upper_bound="x.x") }}
+
+tests:
+  - script:
+      - cp -r $CONDA_PREFIX/cuda-compat/* $CONDA_PREFIX/lib
+      - ldd $(which llama-cli)
+      - llama-cli -h
+    requirements:
+      run:
+        - cuda-compat

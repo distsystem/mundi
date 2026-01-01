@@ -1,0 +1,32 @@
+context:
+  git_url: https://github.com/google-gemini/gemini-cli
+  git_tag: v0.1.22
+  version: "${{ git_tag[1:] | replace('-dev','') }}"
+  name: ${{ git_url | split('/') | last | split('.') | first }}
+  build_number: 0
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  git: ${{ git_url }}
+  tag: ${{ git_tag }}
+
+requirements:
+  build:
+    - nodejs
+  run:
+    - nodejs
+
+build:
+  number: ${{ build_number }}
+  script:
+    - npm install
+    - npm run build
+    - npm pack
+    - npm install -ddd -g --prefix $PREFIX $(ls *.tgz)
+
+tests:
+  - script:
+      - gemini --help

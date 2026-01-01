@@ -1,0 +1,68 @@
+context:
+  git_url: https://github.com/DPDK/dpdk.git
+  git_tag: v25.07
+  name: dpdk
+  build_number: 0
+  version: ${{ git_tag[1:] | replace("-",".") }}
+
+recipe:
+  name: ${{ name }}
+  version: ${{ version }}
+
+cache:
+  source:
+    git: ${{ git_url }}
+    tag: ${{ git_tag }}
+  requirements:
+    build:
+      - ${{ compiler('cxx') }}
+      - ${{ compiler('c') }}
+      - ${{ stdlib('c') }}
+      - meson
+      - ninja
+      - pkg-config
+      - cmake
+      - python 3.10.*
+      - pyelftools
+    host:
+      - dtc
+      - isa-l
+      - jansson
+      - libarchive
+      - libpcap
+      - rdma-core
+      - zlib
+      - libnuma
+      # Doc
+      - doxygen
+      - sphinx
+
+  build:
+    number: ${{ build_number }}
+    script:
+      - |
+        export MAX_JOBS=$(( ($CPU_COUNT - 16) < 1 ? 1 : ($CPU_COUNT - 16) ))
+      - meson setup builddir --prefix=$PREFIX --libdir=lib
+      - meson compile -C builddir
+      - meson install -C builddir
+
+outputs:
+  - package:
+      name: ${{ name }}
+    build:
+      number: ${{ build_number }}
+      files:
+        include:
+          - "bin/*/**"
+          - "bin/**"
+          - "share/*/**"
+  - package:
+      name: ${{ name }}-dev
+    build:
+      number: ${{ build_number }}
+      files:
+        include:
+          - "lib/**"
+          - "lib/*/**"
+          - "include/*/**"
+          - "include/**"

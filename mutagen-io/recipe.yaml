@@ -1,0 +1,31 @@
+context:
+  git_url: https://github.com/mutagen-io/mutagen
+  git_tag: v0.18.1
+  name: ${{ git_url | split('/') | last }}
+  build_number: 1
+  version: ${{ git_tag[1:] }}
+
+package:
+  name: ${{ name|lower }}-io
+  version: ${{ version }}
+
+build:
+  number: ${{ build_number }}
+  script:
+    - if: linux and x86_64
+      then:
+        - TARGET="linux_amd64"
+    - gh release download ${{ git_tag }} -R mutagen-io/mutagen --pattern "*$TARGET*"
+    - tar -I pigz -xvf $(ls *.tar.gz)
+    - install -d "$PREFIX/bin" "$PREFIX/libexec"
+    - cp mutagen $PREFIX/bin/
+    - cp mutagen-agents.tar.gz $PREFIX/libexec/
+requirements:
+  build:
+    - gh
+    - pigz
+    - tar
+
+tests:
+  - script:
+      - ${{ name }} --help

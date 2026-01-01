@@ -1,0 +1,33 @@
+context:
+  git_url: https://github.com/doronbehar/pistol.git
+  git_tag: "v0.5.3"
+  name: ${{ git_url | split('/') | last | split('.') | first }}
+  version: ${{ git_tag[1:] }}
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  - git: ${{ git_url }}
+    tag: ${{ git_tag }}
+
+build:
+  number: 0
+  script:
+    - go build -v -ldflags="-X main.version=${{ version }}" -o $PREFIX/bin/pistol ./cmd/pistol
+
+requirements:
+  build:
+    - ${{ compiler('go-cgo') }}
+    - ${{ compiler('c') }}
+    - make
+    - pkg-config
+  host:
+    - libmagic
+  run:
+    - libmagic
+
+tests:
+  - script:
+      - pistol --help

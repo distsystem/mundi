@@ -1,0 +1,13 @@
+diff --git a/sgl-kernel/CMakeLists.txt b/sgl-kernel/CMakeLists.txt
+index 36ed8c58..5a5efe24 100644
+--- a/sgl-kernel/CMakeLists.txt
++++ b/sgl-kernel/CMakeLists.txt
+@@ -280,7 +280,7 @@ endif()
+ set(MSCCLPP_USE_CUDA ON)
+ set(MSCCLPP_BYPASS_GPU_CHECK ON)
+ set(MSCCLPP_BUILD_TESTS OFF)
+-add_subdirectory(${repo-mscclpp_SOURCE_DIR})
++add_subdirectory(${repo-mscclpp_SOURCE_DIR} ${CMAKE_BINARY_DIR}/repo-mscclpp-build)
+ target_link_libraries(common_ops PRIVATE ${TORCH_LIBRARIES} c10 cuda cublas cublasLt mscclpp_static)
+ 
+ target_compile_definitions(common_ops PRIVATE

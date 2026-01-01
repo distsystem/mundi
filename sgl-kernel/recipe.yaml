@@ -1,0 +1,81 @@
+context:
+  name: "sgl-kernel"
+  git_url: https://github.com/sgl-project/sglang.git
+  git_rev: 5626e20b2bad5d181e9727434681b22ab0f1ac98
+  build_number: 0
+  version: 2025.8.18
+  nvcc_archive: cuda_nvcc-linux-x86_64-12.8.93-archive
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  - git: ${{ git_url }}
+    rev: ${{ git_rev }}
+    patches:
+      - 01-cmakefiles.patch
+      - 02-mscclpp.patch
+  - url: https://developer.download.nvidia.com/compute/cuda/redist/cuda_nvcc/linux-x86_64/${{ nvcc_archive }}.tar.xz
+    sha256: 9961b3484b6b71314063709a4f9529654f96782ad39e72bf1e00f070db8210d3
+    target_directory: ${{ nvcc_archive }}
+build:
+  number: ${{ build_number }}
+  string: py${{ python | version_to_buildstring }}_cuda${{ cuda | version_to_buildstring }}_pt${{ pytorch | replace('.', '') }}_${{ hash }}_${{ build_number }}
+  python:
+    version_independent: true
+  script:
+    content:
+      - if: match(cuda, '>=12.6,<12.8')
+        then:
+          - rm $BUILD_PREFIX/bin/ptxas
+          - cp ${{ nvcc_archive }}/bin/ptxas $BUILD_PREFIX/bin/ptxas
+      - |
+        export MAX_JOBS=$(($CPU_COUNT / 2 > ${{ max_build_jobs }} ? ${{ max_build_jobs }} : $CPU_COUNT / 2 ))
+      - |
+        export CMAKE_ARGS="$CMAKE_ARGS -DSGL_KERNEL_ENABLE_SM90A=ON"
+        export CMAKE_ARGS="$CMAKE_ARGS -DBUILD_FA3=ON"
+      # - python -m uv build --wheel -Cbuild-dir=build ./sgl-kernel --color=always --verbose --no-build-isolation
+      - pip install ./sgl-kernel -vv
+    env:
+      CUDA_HOME: $BUILD_PREFIX
+      TORCH_CUDA_ARCH_LIST: ${{ TORCH_CUDA_ARCH_LIST }}
+      CMAKE_GENERATOR: "Ninja"
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - ${{ compiler('cuda') }}
+    - ${{ stdlib('c') }}
+    - cmake < 4 # dlpack-src
+    - ninja
+    - git
+    - ccache
+  host:
+    - cuda-libraries-dev =${{ cuda_compiler_version }}
+    - nvtx-c
+    - pytorch
+    - pytorch *cuda*
+    - python-ninja
+    - lit
+    - pthread-stubs
+    - python
+    - python-uv
+    - pip
+    - scikit-build-core
+    - packaging
+    - psutil
+    - setuptools
+    - libnuma
+  run:
+    - cuda-python =${{ cuda_compiler_version }}
+    - pytorch *cuda*
+
+tests:
+  - script:
+      - cp -r $CONDA_PREFIX/cuda-compat/* $CONDA_PREFIX/lib
+      - python -c "from sgl_kernel import merge_state_v2"
+    requirements:
+      run:
+        - cuda-compat

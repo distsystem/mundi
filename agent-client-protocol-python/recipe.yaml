@@ -1,0 +1,34 @@
+context:
+  git_url: https://github.com/PsiACE/agent-client-protocol-python.git
+  git_tag: "0.6.2"
+  name: agent-client-protocol
+  version: ${{ git_tag }}
+  build_number: 0
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  git: ${{ git_url }}
+  tag: ${{ git_tag }}
+
+build:
+  number: ${{ build_number }}
+  noarch: python
+  script:
+    - pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python
+    - pip
+    - hatchling
+  run:
+    - python
+    - pydantic >=2.7
+
+tests:
+  - python:
+      imports:
+        - acp

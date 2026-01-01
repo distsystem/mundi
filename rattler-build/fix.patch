@@ -1,0 +1,46 @@
+diff --git a/src/cache.rs b/src/cache.rs
+index 05c0e006..0b5a94fa 100644
+--- a/src/cache.rs
++++ b/src/cache.rs
+@@ -125,6 +125,12 @@ impl Output {
+         cache: Cache,
+         cache_dir: PathBuf,
+     ) -> Result<Output, miette::Error> {
++        // Ensure clean state before restoring cache to prevent contamination between variants
++        self.build_configuration
++            .directories
++            .clean()
++            .into_diagnostic()?;
++
+         let cache_prefix_dir = cache_dir.join("prefix");
+         let copied_prefix = CopyDir::new(&cache_prefix_dir, self.prefix())
+             .run()
+@@ -173,6 +179,12 @@ impl Output {
+                 .cache_dir
+                 .join(cache_key);
+ 
++            // Clean build environment directories before cache operations to ensure isolation between variants
++            self.build_configuration
++                .directories
++                .clean()
++                .into_diagnostic()?;
++
+             // restore the cache if it exists by copying the files to the prefix
+             if cache_dir.exists() {
+                 let text = fs::read_to_string(cache_dir.join("cache.json")).into_diagnostic()?;
+diff --git a/src/metadata.rs b/src/metadata.rs
+index 3d1e2a08..38c4e185 100644
+--- a/src/metadata.rs
++++ b/src/metadata.rs
+@@ -189,6 +189,11 @@ impl Directories {
+                     remove_dir_all_force(&folder.path())?;
+                 }
+             }
++
++            // Recreate essential directories after cleanup to ensure clean state
++            fs::create_dir_all(&self.work_dir)?;
++            fs::create_dir_all(&self.build_prefix)?;
++            fs::create_dir_all(&self.host_prefix)?;
+         }
+         Ok(())
+     }

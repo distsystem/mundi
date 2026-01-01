@@ -1,0 +1,82 @@
+context:
+  name: "sglang"
+  git_url: https://github.com/sgl-project/sglang.git
+  git_tag: v0.5.0rc2
+  build_number: 0
+  version: ${{ git_tag[1:] }}
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  git: ${{ git_url }}
+  tag: ${{ git_tag }}
+
+build:
+  number: ${{ build_number }}
+  noarch: python
+  script:
+    - pip install ./python -vv
+
+requirements:
+  host:
+    - python
+    - pip
+    - packaging
+    - setuptools
+  run:
+    # - llguidance # TODO: add llguidance
+    #                      modelscope
+    - aiohttp
+    - tqdm
+    - requests
+    - ipython
+    - numpy
+    - setproctitle
+
+    # runtime
+    - compressed-tensors
+    - datasets
+    - decord
+    - fastapi
+    - hf-transfer
+    - interegular
+    - huggingface_hub
+    - orjson
+    - packaging
+    - pillow
+    - prometheus_client
+    - psutil
+    - pydantic
+    - nvidia-ml-py
+    - python-multipart
+    - pyzmq
+    - pysoundfile
+    - torchao
+    - transformers
+    - uvicorn
+    - uvloop
+    - xgrammar
+
+    # srt
+    - flashinfer
+    - sgl-kernel
+    - pytorch *cuda*
+    - python
+    - outlines
+    - partial-json-parser
+    - einops
+
+    # openai
+    - openai
+    - tiktoken
+    - pybase64
+    # - antropic
+    # - litellm
+
+tests:
+  - python:
+      imports:
+        - sglang.srt
+      pip_check: false

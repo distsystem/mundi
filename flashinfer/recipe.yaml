@@ -1,0 +1,81 @@
+context:
+  name: "flashinfer"
+  git_url: https://github.com/flashinfer-ai/flashinfer.git
+  git_tag: "v0.2.12"
+  build_number: 0
+package:
+  name: ${{ name }}
+  version: ${{ git_tag[1:] }}
+
+source:
+  - git: ${{ git_url }}
+    tag: ${{ git_tag }}
+    patches:
+      - 01-flags.patch
+      # - 02-spec.patch
+      - 03-nvshmem.patch
+build:
+  number: ${{ build_number }}
+  string: py${{ python | version_to_buildstring }}_cuda${{ cuda | version_to_buildstring }}_pt${{ pytorch | replace('.', '') }}_${{ hash }}
+  python:
+    version_independent: true
+  script:
+    content:
+      - set -x
+      - |
+        export MAX_JOBS=$(($CPU_COUNT / 2 > ${{ max_build_jobs }} ? ${{ max_build_jobs }} : $CPU_COUNT / 2 ))
+      # - export FLASHINFER_JIT_VERBOSE=1
+      - |
+        ast-grep run \
+        --lang python \
+        --pattern 'install_requires=[$$$PRE, "nvidia-nvshmem-cu12",$$$POST]' \
+        --rewrite 'install_requires=[$$$PRE, $$$POST]' \
+        setup.py -U
+      - python -m flashinfer.aot
+      - pip install . -vv
+    env:
+      CUDA_HOME: $BUILD_PREFIX
+      TORCH_CUDA_ARCH_LIST: ${{ TORCH_CUDA_ARCH_LIST }}
+      NVSHMEM_INCLUDE_PATH: $PREFIX/include
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - ${{ compiler('cuda') }}
+    - ninja
+    - cmake
+    - sccache
+  host:
+    - tomcli
+    - cuda-libraries-dev =${{ cuda_compiler_version }}
+    - pytorch
+    - pytorch *cuda*
+    - python
+    - pip
+    - psutil
+    - python-ninja
+    - packaging
+    - setuptools
+    - sympy
+    - lit
+    - numpy
+    - einops
+    - fsspec
+    - filelock
+    - requests
+    - nvshmem4py
+    - libnvshmem-dev
+    - libnvshmem-static
+    - nvidia-shim
+  run:
+    - cuda-python =${{ cuda_compiler_version }}
+    - pynvml
+    - python-ninja
+    - requests
+    - einops
+tests:
+  - python:
+      imports:
+        - flashinfer
+      pip_check: false

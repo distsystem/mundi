@@ -1,0 +1,120 @@
+context:
+  name: vllm
+  git_url: https://github.com/vllm-project/vllm
+  git_tag: v0.10.0
+  build_number: 0
+  nvcc_archive: cuda_nvcc-linux-x86_64-12.8.93-archive
+  version: ${{ git_tag[1:] }}
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  - git: ${{ git_url }}
+    tag: ${{ git_tag }}
+    patches:
+      - 01-cmake-setup.patch
+      - 02-cmakefiles.patch
+      # - 03-license.patch
+  - url: https://developer.download.nvidia.com/compute/cuda/redist/cuda_nvcc/linux-x86_64/${{ nvcc_archive }}.tar.xz
+    sha256: 9961b3484b6b71314063709a4f9529654f96782ad39e72bf1e00f070db8210d3
+    target_directory: ${{ nvcc_archive }}
+build:
+  number: ${{ build_number }}
+  string: py${{ python | version_to_buildstring }}_cuda${{ cuda | version_to_buildstring }}_pt${{ pytorch | replace('.', '') }}_${{ hash }}_${{ build_number }}
+  python:
+    entry_points:
+      - vllm = vllm.entrypoints.cli.main:main
+    version_independent: true
+  script:
+    content:
+      - set -ex
+      - if: match(cuda, '>=12.6,<12.8')
+        then:
+          - rm $BUILD_PREFIX/bin/ptxas
+          - cp ${{ nvcc_archive }}/bin/ptxas $BUILD_PREFIX/bin/ptxas
+      - if: match(setuptools, '<80')
+        then:
+          - |
+            LICENSE=$(tomcli get pyproject.toml project.license)
+            tomcli set pyproject.toml del project.license
+            tomcli set pyproject.toml del project.license-files
+            tomcli set pyproject.toml str project.license.text $LICENSE
+      - python use_existing_torch.py
+      - |
+        export MAX_JOBS=$(($CPU_COUNT / 2 > 32 ? 32 : $CPU_COUNT / 2 ))
+        # export NVCC_THREADS=$(($CPU_COUNT / 2 > 16 ? 16 : $CPU_COUNT / 2 ))
+      - pip install . -vv
+    env:
+      CUDA_HOME: $BUILD_PREFIX
+      TORCH_CUDA_ARCH_LIST: ${{ TORCH_CUDA_ARCH_LIST }}
+      VLLM_FA_CMAKE_GPU_ARCHES: ${{ CMAKE_CUDA_ARCHITECTURES }}
+      VERBOSE: "1"
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - ${{ compiler('cuda') }}
+    - ${{ stdlib('c') }}
+    - cmake
+    - ninja
+    - sccache
+  host:
+    - cuda-libraries-dev =${{ cuda_compiler_version }}
+    - cuda-nvml-dev
+    - nvtx-c
+    - pytorch
+    - pytorch *cuda*
+    - libtorch
+    - python
+    - regex
+    - pip
+    - python-ninja
+    - packaging
+    - setuptools
+    - jinja2
+    - setuptools_scm
+    - tomcli
+  run:
+    - psutil
+    - einops
+    - pytorch *cuda*
+    - fsspec
+    - transformers
+    - msgspec
+    - pydantic
+    - compressed-tensors
+    - gguf
+    - cloudpickle
+    - mistral-common
+    - nccl
+    - setuptools
+    - py-cpuinfo
+    - openai
+    - opencv
+    - pyzmq
+    - blake3
+    - uvloop
+    - fastapi
+    - partial-json-parser
+    - ray-default >=2.9
+    - nvidia-ml-py
+    - xgrammar
+    - python-json-logger
+    - scipy
+    - outlines
+    - numba
+    - python-ninja
+    - torchvision
+    - xformers
+    # - numba
+    - prometheus-fastapi-instrumentator
+    - lark
+    - depyf
+tests:
+  - python:
+      imports:
+        - vllm
+      pip_check: false

@@ -1,0 +1,43 @@
+context:
+  package_name: fastuuid
+  git_url: https://github.com/fastuuid/fastuuid.git
+  git_tag: 0.12.0
+  build_number: 0
+
+package:
+  name: ${{ package_name }}
+  version: ${{ git_tag }}
+
+source:
+  - git: ${{ git_url }}
+    tag: ${{ git_tag }}
+
+build:
+  number: ${{ build_number }}
+  script:
+    - |
+      FILE=pyproject.toml
+      if [ -z "$(tomcli get $FILE project.version || echo "")" ]; then
+          tomcli set $FILE list project.dynamic
+          tomcli set $FILE append project.dynamic version
+      fi
+    - pip install . -vv
+    # - maturin build --release --compatibility  --zig --auditwheel check
+    # - maturin build --release
+    # - pip install target/wheels/* -vv
+requirements:
+  build:
+    - ${{ compiler("rust") }}
+    - tomcli
+  host:
+    - python
+    - maturin
+    - pip
+
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - fastuuid

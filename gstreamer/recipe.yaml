@@ -1,0 +1,143 @@
+context:
+  git_url: https://gitlab.freedesktop.org/gstreamer/gstreamer.git
+  git_tag: "1.26.3"
+  version: ${{ git_tag }}
+  build_number: 4
+
+recipe:
+  name: gstreamer-plugins
+  version: ${{ version }}
+
+source:
+  - git: ${{ git_url }}
+    tag: ${{ git_tag }}
+    lfs: false
+
+outputs:
+  - package:
+      name: gst-plugins-bad
+    build:
+      number: ${{ build_number }}
+      script:
+        - cd subprojects/gst-plugins-bad
+        - mkdir -p build
+        - cd build
+        - export PKG_CONFIG_PATH="${PREFIX}/lib/pkgconfig:${BUILD_PREFIX}/lib/pkgconfig"
+        - |
+          meson setup .. \
+            --buildtype=release \
+            --prefix="${PREFIX}" \
+            --libdir=lib \
+            --wrap-mode=nofallback \
+            -Dexamples=disabled \
+            -Dtests=disabled \
+            -Dintrospection=enabled \
+            -Dorc=disabled \
+            -Dgpl=enabled
+        - ninja -j${CPU_COUNT}
+        - ninja install
+    requirements:
+      build:
+        - ${{ compiler('c') }}
+        - ${{ compiler('cxx') }}
+        - pkg-config
+        - meson
+        - ninja
+        - gettext
+        - perl
+        - libtool
+        - setuptools
+        - python
+      host:
+        - gstreamer ==${{ version }}
+        - gst-plugins-base ==${{ version }}
+        - glib
+        - gobject-introspection
+        - libgl-devel
+        - libegl-devel
+        - libdrm
+        - libxcb
+        - pthread-stubs
+        - openssl
+        - libxml2
+        - libsndfile
+        - libopus
+        - libnice
+        - libsrtp2
+        - zlib
+        - expat
+        - xorg-xorgproto
+        - xorg-libx11
+        - xorg-libxfixes
+        - xorg-libxext
+        - xorg-libxrender
+        - xorg-libxdamage
+        - xorg-libxxf86vm
+        - xorg-libxau
+      run:
+        - gstreamer ==${{ version }}
+        - gst-plugins-base ==${{ version }}
+      run_exports:
+        - ${{ pin_subpackage('gst-plugins-bad', upper_bound='x.x') }}
+      ignore_run_exports:
+        from_package:
+          - libxml2
+    tests:
+      - script:
+          - gst-inspect-1.0 webrtc
+          - gst-inspect-1.0 srtp
+
+  - package:
+      name: gst-plugins-ugly
+    build:
+      number: ${{ build_number }}
+      script:
+        - cd subprojects/gst-plugins-ugly
+        - mkdir -p build
+        - cd build
+        - export PKG_CONFIG_PATH="${PREFIX}/lib/pkgconfig:${BUILD_PREFIX}/lib/pkgconfig"
+        - |
+          meson setup .. \
+            --buildtype=release \
+            --prefix="${PREFIX}" \
+            --libdir=lib \
+            --wrap-mode=nofallback \
+            -Dtests=disabled \
+            -Dorc=disabled \
+            -Dgpl=enabled \
+            -Dx264=enabled
+        - ninja -j${CPU_COUNT}
+        - ninja install
+    requirements:
+      build:
+        - ${{ compiler('c') }}
+        - ${{ compiler('cxx') }}
+        - pkg-config
+        - meson
+        - ninja
+        - gettext
+        - perl
+        - libtool
+        - setuptools
+        - python
+      host:
+        - gstreamer ==${{ version }}
+        - gst-plugins-base ==${{ version }}
+        - glib
+        - gobject-introspection
+        - libxml2
+        - zlib
+        - x264
+      run:
+        - gstreamer ==${{ version }}
+        - gst-plugins-base ==${{ version }}
+      run_exports:
+        - ${{ pin_subpackage('gst-plugins-ugly', upper_bound='x.x') }}
+      ignore_run_exports:
+        from_package:
+          - libxml2
+    tests:
+      - script:
+          - gst-inspect-1.0 x264enc
+          - gst-inspect-1.0 asfdemux
+          - gst-inspect-1.0 realmedia

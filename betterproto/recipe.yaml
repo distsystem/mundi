@@ -1,0 +1,45 @@
+context:
+  name: "betterproto"
+  git_url: https://github.com/danielgtaylor/python-betterproto
+  git_rev: a3f7fd0c1fd788871c460088446099700f6679e4
+  build_number: 0
+  version: 2025.7.17
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  - git: ${{ git_url }}
+    rev: ${{ git_rev }}
+build:
+  number: ${{ build_number }}
+  noarch: python
+  python:
+    entry_points:
+      - protoc-gen-python_betterproto=betterproto.plugin:main
+  script:
+    - pip install . -vv
+
+requirements:
+  host:
+    - python
+    - pip
+    - packaging
+    - setuptools
+    - poetry
+  run:
+    - grpclib
+    - stringcase
+    - python-dateutil
+    - setuptools
+    - typing-extensions
+    - ruff
+    - jinja2
+
+tests:
+  - python:
+      imports:
+        - betterproto
+  - script:
+      - protoc-gen-python_betterproto

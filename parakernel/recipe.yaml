@@ -1,0 +1,43 @@
+context:
+  git_url: https://github.com/distsystem/parakernel.git
+  git_tag: v0.3.1
+  name: "parakernel"
+
+source:
+  - git: ${{ git_url }}
+    # tag: ${{ git_tag }}
+
+package:
+  name: ${{ name }}
+  version: ${{ git_tag[1:] }}
+
+build:
+  script:
+    - go build -o $PREFIX/bin/parakernel
+    - |
+      install -Dm644 /dev/stdin \
+      "$PREFIX/share/jupyter/kernels/${{name}}/kernel.json" <<EOF
+      {
+        "argv": [
+          "${PREFIX}/bin/parakernel",
+          "proxy",
+          "-f",
+          "{connection_file}"
+        ],
+        "display_name": "ParaKernel",
+        "language": "python",
+        "interrupt_mode": "message",
+        "metadata": {
+          "debugger": true
+        }
+      }
+      EOF
+
+requirements:
+  build:
+    - ${{ compiler('go-nocgo') }}
+  run:
+    - ipython
+tests:
+  - script:
+      - cat ${PREFIX}/share/jupyter/kernels/${{ name }}/kernel.json

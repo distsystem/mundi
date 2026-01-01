@@ -1,0 +1,42 @@
+context:
+  name: "passt"
+  git_url: git://passt.top/passt
+  git_tag: 2025_08_05.309eefd
+  version: ${{ git_tag | split(".") | first | replace("_",".") }}
+  build_number: 0
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  - git: ${{ git_url }}
+    tag: ${{ git_tag }}
+
+build:
+  number: ${{ build_number }}
+  string: ${{ git_tag | split(".") | last }}
+
+  # dynamic_linking:
+  #   missing_dso_allowlist: ["libc*", "libm*", "libpthread*", "libdl*"]
+  #   rpath_allowlist: ["/usr/lib/**", "/usr/lib64/**"]
+  script:
+    - export CFLAGS="${CFLAGS} -isystem $BUILD_PREFIX/$BUILD/sysroot/usr/include"
+    - make install prefix=$PREFIX -j 8
+    # - cp passt pasta $PREFIX/bin/
+    - rm test/run
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ stdlib('c') }}
+    - make
+
+  ignore_run_exports:
+    from_package:
+      - glib
+      - gcc_${{ target_platform }}
+tests:
+  - script:
+      - pasta --help
+      - passt --help

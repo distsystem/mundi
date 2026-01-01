@@ -1,0 +1,32 @@
+context:
+  git_url: https://github.com/sxyazi/yazi
+  git_tag: v25.5.31
+  name: yazi
+  version: ${{ git_tag[1:] }}
+  build_number: 0
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  - git: ${{ git_url }}
+    tag: ${{ git_tag }}
+
+build:
+  number: ${{ build_number }}
+  script:
+    - unset CARGO_TARGET_DIR
+    - export RUST_BACKTRACE=full
+    - cargo install --root $PREFIX --path ./yazi-fm
+    - cargo install --root $PREFIX --path ./yazi-cli
+
+requirements:
+  build:
+    - ${{ compiler("rust") }}
+    - ${{ compiler("c") }}
+    - make
+
+tests:
+  - script:
+      - yazi --help

@@ -1,0 +1,56 @@
+context:
+  git_url: http://sourceware.org/git/systemtap
+  git_tag: "release-5.3"
+  name: ${{ git_url | split('/') | last }}
+  build_number: 0
+  version: ${{ git_tag | split("-") | last }}
+
+recipe:
+  name: ${{ name }}
+  version: ${{ version }}
+
+cache:
+  source:
+    - git: ${{ git_url }}
+      tag: ${{ git_tag }}
+  requirements:
+    build:
+      - ${{ compiler('cxx') }}
+      - ${{ compiler('c') }}
+      - ${{ stdlib('c') }}
+      - autoconf
+      - automake
+      - make
+      - libtool
+      - grep
+      - gettext-tools
+    host:
+      - elfutils
+      - json-c
+      - python 3.10.*
+      - avahi
+      - setuptools
+      - libboost
+      - openssl
+  build:
+    script:
+      - rm -rf .git
+      - ./configure --help
+      - ./configure --prefix=$PREFIX --enable-Werror=no --disable-bsdcpio --without-rpm
+      - make -j $CPU_COUNT
+      - make install
+
+outputs:
+  # - package:
+  #     name: ${{ name }}
+  #   build:
+  #     files:
+  #       include:
+  #         - "bin/*"
+  - package:
+      name: ${{ name }}-sdt-dev
+    build:
+      number: ${{ build_number }}
+      files:
+        include:
+          - "include/*/**"

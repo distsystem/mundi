@@ -1,0 +1,10 @@
+c_compiler:
+  - gcc
+c_stdlib:
+  - sysroot
+cxx_compiler:
+  - gxx
+c_compiler_version:
+  - "12"
+cxx_compiler_version:
+  - "12"

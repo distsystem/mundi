@@ -1,0 +1,33 @@
+context:
+  package_name: blake3
+  git_repo_url: https://github.com/oconnor663/blake3-py.git
+  git_tag: 1.0.5
+
+package:
+  name: ${{ package_name }}
+  version: ${{ git_tag }}
+
+source:
+  git: ${{ git_repo_url }}
+  tag: ${{ git_tag }}
+
+build:
+  number: 0
+  script:
+    - pip install . -vv
+requirements:
+  build:
+    - ${{ compiler("rust") }}
+    # - tomcli
+  host:
+    - python
+    - maturin
+    - pip
+
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - blake3

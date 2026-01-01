@@ -1,0 +1,13 @@
+diff --git a/linux-user/gen-vdso-elfn.c.inc b/linux-user/gen-vdso-elfn.c.inc
+index b47019e..e95b8c1 100644
+--- a/linux-user/gen-vdso-elfn.c.inc
++++ b/linux-user/gen-vdso-elfn.c.inc
+@@ -259,7 +259,7 @@ static void elfN(process)(FILE *outf, void *buf, long len, bool need_bswap)
+             case DT_FLAGS:
+             case DT_FLAGS_1:
+             case DT_SYMBOLIC:
+-            case DT_BIND_NOW:
++            case DT_BINDNOW:
+             case DT_VERDEFNUM:
+             case DT_VALRNGLO ... DT_VALRNGHI:
+                 /* These entries store an integer in the entry. */

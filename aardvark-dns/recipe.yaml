@@ -1,0 +1,29 @@
+context:
+  name: aardvark-dns
+  git_url: https://github.com/containers/aardvark-dns.git
+  git_tag: v1.16.0
+  version: ${{ git_tag[1:] }}
+  build_number: 0
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  - git: ${{ git_url }}
+    tag: ${{ git_tag }}
+
+build:
+  number: ${{ build_number }}
+  script:
+    - cargo install --locked --root "$PREFIX" --path . --no-track
+    # - mv $PREFIX/lib/podman/bin/* $PREFIX/lib/podman/
+    # - rmdir $PREFIX/lib/podman/bin
+
+requirements:
+  build:
+    - ${{ compiler("rust") }}
+
+tests:
+  - script:
+      - aardvark-dns -h

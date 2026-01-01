@@ -1,0 +1,76 @@
+context:
+  git_url: https://github.com/dagger/dagger.git
+  git_tag: v0.18.16
+  name: ${{ git_url | split('/') | last | split('.') | first }}
+  build_number: 0
+  version: ${{ git_tag[1:] }}
+
+recipe:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  - git: ${{ git_url }}
+    tag: ${{ git_tag }}
+
+outputs:
+  - package:
+      name: ${{ name }}
+    build:
+      number: ${{ build_number }}
+      script:
+        - cd cmd/dagger
+        - go build -o $PREFIX/bin/dagger .
+    requirements:
+      host:
+        - ${{ compiler('go-nocgo') }}
+    tests:
+      - script:
+          - dagger --help
+
+  - package:
+      name: ${{ name }}-io
+    build:
+      number: ${{ build_number }}
+      noarch: python
+      script:
+        - pip install ./sdk/python -vv
+
+    requirements:
+      host:
+        - python
+        - pip
+        - hatchling
+        - hatch-vcs
+        - uv-build
+      run:
+        - python
+        - anyio
+        - cattrs
+        - gql
+        - httpx
+        - beartype
+        - platformdirs
+        - typing_extensions
+        - rich
+        - opentelemetry-sdk
+        - opentelemetry-instrumentation
+        - opentelemetry-exporter-otlp-proto-grpc
+        - opentelemetry-instrumentation-logging
+        - opentelemetry-exporter-otlp-proto-http
+
+    tests:
+      - python:
+          imports:
+            - dagger
+          pip_check: false
+
+    about:
+      homepage: https://dagger.io
+      summary: A client package for running Dagger pipelines in Python.
+      description: |
+        The Dagger Python SDK contains everything you need to develop CI/CD
+        pipelines in Python, and run them on any OCI-compatible container runtime.
+      license: Apache-2.0
+      license_file: LICENSE
+      documentation: https://docs.dagger.io/sdk/python

@@ -1,0 +1,17 @@
+diff --git a/flashinfer/jit/core.py b/flashinfer/jit/core.py
+index 83931ed..954982b 100644
+--- a/flashinfer/jit/core.py
++++ b/flashinfer/jit/core.py
+@@ -158,6 +158,12 @@ def gen_jit_spec(
+         # non debug mode
+         cuda_cflags += ["-DNDEBUG"]
+ 
++    cflags += os.environ.get("CPPFLAGS", "").split()
++    cuda_cflags += os.environ.get("NVCC_APPEND_FLAGS", "").split()
++    extra_ldflags = (
++        os.environ.get("LDFLAGS", "").split() + (extra_cflags if extra_cflags else [])
++        or extra_cflags
++    )
+     if extra_cflags is not None:
+         cflags += extra_cflags
+     if extra_cuda_cflags is not None:

@@ -1,0 +1,27 @@
+context:
+  name: podman-rootful
+  version: 0.1.1
+  build_number: 0
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+build:
+  number: ${{ build_number }}
+  script:
+    - install -D -m 0755 $RECIPE_DIR/${{ name }} "$PREFIX/bin/${{ name }}"
+requirements:
+  run:
+    - podman
+    - qemu
+
+tests:
+  - script:
+      - if: env.exists('GITHUB_ACTIONS')
+        then:
+          - test -e $PREFIX/bin/${{ name }}
+        else:
+          - source $PREFIX/bin/${{ name }}
+          - test -n $CONTAINER_HOST
+          - test -n $DOCKER_HOST

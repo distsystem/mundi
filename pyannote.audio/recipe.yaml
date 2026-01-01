@@ -1,0 +1,52 @@
+context:
+  name: "pyannote.audio"
+  git_url: https://github.com/pyannote/pyannote-audio.git
+  git_tag: "3.3.1"
+
+package:
+  name: ${{ name }}
+  version: ${{ git_tag }}
+
+source:
+  - git: ${{ git_url }}
+    tag: ${{ git_tag }}
+
+build:
+  number: 0
+  noarch: python
+  script:
+    - PIP_NO_INDEX="" pip install primePy pyannote-pipeline torch-audiomentations julius torch-pitch-shift
+    - pip install . -vv
+    - rm -rf $SP_DIR/tests
+
+requirements:
+  host:
+    - python
+    - setuptools
+    - pip
+    - pyscaffold=3.2
+  run:
+    - pytorch
+    - python
+    - einops
+    - numpy
+    - pyannote.core
+    - pyannote.database
+    - pyannote.metrics
+    - pytorch-lightning
+    - torchaudio
+    - huggingface_hub
+    - pysoundfile
+    - librosa
+    - semver
+    - optuna
+    - pytorch-metric-learning
+
+tests:
+  - script:
+      interpreter: python
+      content: |
+        import pyannote
+        from pyannote.audio import Model
+        from pyannote.audio.tasks import VoiceActivityDetection as VoiceActivityDetectionTask
+        # from pyannote.audio import Pipeline

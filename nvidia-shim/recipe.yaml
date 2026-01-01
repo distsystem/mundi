@@ -1,0 +1,31 @@
+context:
+  git_url: https://github.com/fecet/nvidia-shim
+  name: ${{ git_url | split('/') | last | split('.') | first }}
+  git_tag: v0.1.0
+  build_number: 0
+  version: ${{ git_tag[1:] }}
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  - git: ${{ git_url }}
+    tag: ${{ git_tag }}
+build:
+  number: ${{ build_number }}
+  noarch: python
+  script:
+    - pip install . -vv
+
+requirements:
+  host:
+    - python
+    - pip
+    - hatchling
+
+tests:
+  - python:
+      imports:
+        - nvidia
+        - flash_attn_3

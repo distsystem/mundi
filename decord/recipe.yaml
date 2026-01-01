@@ -1,0 +1,66 @@
+context:
+  name: decord
+  git_url: https://github.com/dmlc/decord.git
+  # git_url: https://github.com/MetaphyLabs/cuda-decord.git
+  # git_tag: v4.5.0
+
+package:
+  name: ${{ name }}
+  version: 0.6.0.1
+
+source:
+  - git: ${{ git_url }}
+    # tag: ${{ git_tag }}
+
+build:
+  script:
+    - PIP_NO_INDEX="" pip install decord
+    # - patch -p1 < $RECIPE_DIR/0002-fix-building-with-ffmpeg.patch
+    # - mkdir build && cd build
+    # # - |
+    # #   cmake -DCMAKE_BUILD_TYPE=Release \
+    # #   -DCMAKE_INSTALL_PREFIX="$PREFIX" \
+    # #   -DCMAKE_SKIP_INSTALL_RPATH=ON \
+    # #   -DFFMPEG_INCLUDE_DIR="$PREFIX/include" \
+    # #   -DUSE_CUDA=ON \
+    # #   -DCUDA_CUDA_LIBRARY=$PREFIX/lib/stubs/libcuda.so \
+    # #   -DCUDA_CUDNN_LIBRARY=$PREFIX/lib/libcudnn.so \
+    # #   -DCUDA_NVIDIA_ML_LIBRARY=$PREFIX/lib/stubs/libnvidia-ml.so \
+    # #   -S "$SRC_DIR"
+    # - |
+    #   cmake -DCMAKE_BUILD_TYPE=Release \
+    #   -DCMAKE_INSTALL_PREFIX="$PREFIX" \
+    #   -DCMAKE_SKIP_INSTALL_RPATH=ON \
+    #   -DFFMPEG_INCLUDE_DIR="$PREFIX/include" \
+    #   -DUSE_CUDA=0 \
+    #   -S "$SRC_DIR"
+    # - make -j${CPU_COUNT} VERBOSE=1
+    # - make install
+    # - cd ../python
+    # - pip install . -vv
+
+requirements:
+  host:
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - ${{ stdlib("c") }}
+    - cmake
+    - cuda
+    - python
+    - pip
+    - ninja
+    - numpy
+    # - ffmpeg=6.1
+
+  run:
+    - python
+    - numpy
+    - ffmpeg
+  # ignore_run_exports:
+  #   from_package:
+  #     - ffmpeg
+tests:
+  - python:
+      imports:
+        - decord
+      pip_check: false

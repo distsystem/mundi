@@ -1,0 +1,60 @@
+context:
+  name: pulumi
+  git_url: https://github.com/pulumi/pulumi.git
+  git_tag: v3.199.0
+  version: ${{ git_tag[1:] }}
+  build_number: 0
+
+recipe:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  - git: ${{ git_url }}
+    tag: ${{ git_tag }}
+
+outputs:
+  - package:
+      name: ${{ name }}
+    build:
+      number: ${{ build_number }}
+      script:
+        - cd pkg
+        - export LDFLAGS="-s -w"
+        - go build -ldflags "${LDFLAGS}" -o $PREFIX/bin/pulumi github.com/pulumi/pulumi/pkg/v3/cmd/pulumi
+    requirements:
+      host:
+        - ${{ compiler('go-nocgo') }}
+    tests:
+      - script:
+          - pulumi version
+          - pulumi --help
+
+  - package:
+      name: ${{ name }}-sdk-python
+    build:
+      number: ${{ build_number }}
+      noarch: python
+      script:
+        - pip install ./sdk/python -vv
+    requirements:
+      host:
+        - python
+        - pip
+        - hatchling
+        - hatch-vcs
+        - uv-build
+      run:
+        - python
+        - protobuf
+        - grpcio
+        - dill
+        - six
+        - semver
+        - pyyaml
+        - ${{ pin_subpackage(name, exact=True) }}
+    tests:
+      - python:
+          imports:
+            - pulumi
+          pip_check: false

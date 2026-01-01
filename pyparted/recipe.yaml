@@ -1,0 +1,37 @@
+# Python bindings for GNU Parted (libparted)
+# Enables partition manipulation through Python interfaces
+# Reference: https://github.com/dcantrell/pyparted
+context:
+  git_url: https://github.com/dcantrell/pyparted.git
+  git_tag: v3.13.0
+  name: pyparted
+  version: ${{ git_tag[1:] }}
+  build_number: 1
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  git: ${{ git_url }}
+  tag: ${{ git_tag }}
+
+build:
+  number: ${{ build_number }}
+  script:
+    - pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python
+    - pip
+    - setuptools
+    - parted
+  run:
+    - python
+    - parted
+
+tests:
+  - python:
+      imports:
+        - parted

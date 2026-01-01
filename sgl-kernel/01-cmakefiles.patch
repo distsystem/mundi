@@ -1,0 +1,11 @@
+diff --git a/sgl-kernel/CMakeLists.txt b/sgl-kernel/CMakeLists.txt
+index 929a60d3..41553cd3 100644
+--- a/sgl-kernel/CMakeLists.txt
++++ b/sgl-kernel/CMakeLists.txt
+@@ -18,6 +18,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
+ 
+ # CUDA
+ enable_language(CUDA)
++find_package(CUDA REQUIRED)
+ find_package(CUDAToolkit REQUIRED)
+ set_property(GLOBAL PROPERTY CUDA_SEPARABLE_COMPILATION ON)

@@ -1,0 +1,108 @@
+context:
+  name: podman
+  git_url: https://github.com/containers/podman.git
+  git_tag: v5.6.0
+  version: ${{ git_tag[1:] }}
+  build_number: 2
+
+recipe:
+  name: ${{ name }}
+  version: ${{ version }}
+
+cache:
+  source:
+    - git: ${{ git_url }}
+      tag: ${{ git_tag }}
+      patches:
+        - 01-relocate.patch
+
+  build:
+    number: ${{ build_number }}
+    script:
+      - set -ex
+      - make all
+      - make docker-docs
+      - make install install.completions ETCDIR="${PREFIX}/etc"
+      - make install.docker-full PREFIX=${PREFIX} ETCDIR="${PREFIX}/etc"
+      - go-licenses save ./cmd/podman/ --save_path=license-files
+      - mkdir -p $PREFIX/lib/podman
+      - ln -sf ../../bin/aardvark-dns $PREFIX/lib/podman/aardvark-dns
+      - ln -sf ../../bin/gvproxy $PREFIX/lib/podman/gvproxy
+
+  requirements:
+    build:
+      - ${{ compiler('c') }}
+      - ${{ stdlib("c") }}
+      - ${{ compiler('go-cgo') }}
+      # - ${{ cdt('shadow-utils-subid') }}
+      # - ${{ cdt('shadow-utils-subid-devel') }}
+      - go-licenses
+      - go-md2man
+      - pkg-config
+      - make
+      - gettext
+    host:
+      - btrfs-progs
+      - containers-common
+      - libglib
+      - gpgme
+      - libassuan
+      - libgpg-error
+      - libseccomp
+      - gvproxy
+      - aardvark-dns
+
+outputs:
+  - package:
+      name: ${{ name }}
+    build:
+      number: ${{ build_number }}
+      dynamic_linking:
+        binary_relocation:
+          - "!lib/podman/*"
+      files:
+        include:
+          - lib/podman/*
+          - lib/systemd/*
+          - lib/tmpfiles.d/podman.conf
+          - libexec
+          - share
+          - bin/${{ name }}*
+        exclude:
+          - share/man/*/docker*
+    requirements:
+      run:
+        - conmon
+        - containers-common
+        - cni-plugins
+        - runc
+        - netavark
+        - passt
+        - libsqlite
+        - gvproxy
+        - aardvark-dns
+
+    tests:
+      - script:
+          - set -ex
+          - ldd $PREFIX/bin/podman
+          - podman info
+          # - $PREFIX/bin/podman run --runtime $PREFIX/bin/runc --rm alpine sh -c "echo hello"
+  - package:
+      name: ${{ name }}-docker
+    build:
+      number: ${{ build_number }}
+      files:
+        include:
+          - bin/docker
+          - lib/tmpfiles.d/*docker
+          - etc/*
+          - share/man/*/docker*
+    requirements:
+      run:
+        - ${{ pin_subpackage(name, exact=True) }}
+      run_constraints:
+        - docker >= 9999 # confict
+    tests:
+      - script:
+          - docker --help

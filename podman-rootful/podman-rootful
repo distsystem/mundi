@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+CONTAINER_SOCK="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/podman/podman-machine-default-api.sock"
+MACHINE_NAME=podman-machine-default
+if ! podman machine list --format "{{.Name}}" | grep -Fxq "$MACHINE_NAME"; then
+  # --volume "$CONDA_PREFIX/../containers:/var/lib/containers"
+  podman machine init "$MACHINE_NAME" \
+    --username "$USER" \
+    --image "docker://quay.io/podman/machine-os:next" \
+    --rootful
+fi
+if [ ! -S "$CONTAINER_SOCK" ]; then
+  podman machine start "$MACHINE_NAME"
+fi
+export CONTAINER_HOST="unix://$CONTAINER_SOCK"
+export DOCKER_HOST="unix://$CONTAINER_SOCK"

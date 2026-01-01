@@ -1,0 +1,14 @@
+diff --git a/flashinfer/aot.py b/flashinfer/aot.py
+index 2e2885a..12d4e50 100644
+--- a/flashinfer/aot.py
++++ b/flashinfer/aot.py
+@@ -655,6 +655,9 @@ def main():
+         add_act,
+         add_misc,
+     )
++    from .comm.nvshmem import gen_nvshmem_module
++
++    jit_specs = [gen_nvshmem_module()]
+     print("Total ops:", len(jit_specs))
+ 
+     # Build

@@ -1,0 +1,36 @@
+# D-Bus library in Python 3, based on GLib and inspired by pydbus
+# https://github.com/dasbus-project/dasbus
+context:
+  git_url: https://github.com/dasbus-project/dasbus
+  git_tag: v1.7
+  name: dasbus
+  version: ${{ git_tag[1:] }}
+  build_number: 0
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  git: ${{ git_url }}
+  tag: ${{ git_tag }}
+
+build:
+  number: ${{ build_number }}
+  script:
+    - pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python
+    - setuptools
+    - pip
+  run:
+    - python >=3.6
+    - pygobject >=3
+
+tests:
+  - python:
+      imports:
+        - dasbus
+        - dasbus.connection

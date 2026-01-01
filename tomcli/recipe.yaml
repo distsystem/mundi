@@ -1,0 +1,42 @@
+context:
+  git_url: https://git.sr.ht/~gotmax23/tomcli
+  git_tag: v0.10.1
+  name: tomcli
+
+package:
+  name: ${{ name }}
+  version: ${{ git_tag[1:] }}
+
+source:
+  - git: ${{ git_url }}
+    tag: ${{ git_tag }}
+
+build:
+  noarch: python
+  python:
+    entry_points:
+      - tomcli = tomcli.cli.main:APP
+      - tomcli-get = tomcli.cli.get:app
+      - tomcli-set = tomcli.cli.set:app
+      - tomcli-formatters = tomcli.cli.formatters:APP
+  script:
+    - pip install . -vv
+    - env
+
+requirements:
+  host:
+    - flit-core
+    - python
+    - pip
+  run:
+    - python
+    - click
+    - importlib_metadata
+    - tomlkit
+    - tomli
+    - tomli-w
+
+tests:
+  - script:
+      - tomcli set --help
+      - tomcli get --help

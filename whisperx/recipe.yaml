@@ -1,0 +1,40 @@
+context:
+  name: "whisperx"
+  git_url: https://github.com/m-bain/whisperX.git
+  git_tag: v3.4.2
+
+package:
+  name: ${{ name }}
+  version: ${{ git_tag[1:] }}
+
+source:
+  - git: ${{ git_url }}
+    tag: ${{ git_tag }}
+
+build:
+  number: 1
+  noarch: python
+  script:
+    - pip install . -vv
+
+requirements:
+  host:
+    - python < 3.13
+    - pytorch
+    - setuptools
+    - pip
+  run:
+    - pytorch
+    - numpy
+    - pandas
+    - torchaudio
+    - transformers
+    - nltk
+    - pyannote.audio
+    - faster-whisper
+
+tests:
+  - script:
+      interpreter: python
+      content: |
+        import whisperx

@@ -1,0 +1,40 @@
+context:
+  name: "btop"
+  git_url: https://github.com/aristocratos/btop.git
+  git_tag: v1.4.4
+
+package:
+  name: ${{ name }}
+  version: ${{ git_tag[1:] }}
+
+source:
+  - git: ${{ git_url }}
+    tag: ${{ git_tag }}
+
+build:
+  number: 0
+  script:
+    - mkdir build
+    - export MAX_JOBS=$(expr $CPU_COUNT - 16)
+    - if: win
+      then: |
+        cmake -B build %CMAKE_ARGS% -DCMAKE_EXE_LINKER_FLAGS="-ldl" -GNinja %SRC_DIR%
+        ninja install -C build
+      else: |
+        cmake -B build $CMAKE_ARGS -DCMAKE_EXE_LINKER_FLAGS="-ldl" -GNinja $SRC_DIR  
+        ninja install -C build
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - pkg-config
+    - cmake
+    - ninja
+    - libasprintf
+    - libasprintf-devel
+
+tests:
+  - script:
+      - btop --help
+      - btop -v

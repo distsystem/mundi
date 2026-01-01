@@ -1,0 +1,44 @@
+# Python module for system storage configuration
+# Requires system-level libblockdev and its Python bindings to function at runtime
+# Reference: https://storaged.org/blivet/
+context:
+  git_url: https://github.com/storaged-project/blivet.git
+  git_tag: blivet-3.13.1
+  name: blivet
+  version: ${{ git_tag | replace('blivet-', '') }}
+  build_number: 0
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  git: ${{ git_url }}
+  tag: ${{ git_tag }}
+
+build:
+  number: ${{ build_number }}
+  noarch: python
+  script:
+    - pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python >=3.6
+    - pip
+    - setuptools
+  run:
+    - python >=3.6
+    - pygobject
+    - python-blockdev
+    - python-bytesize
+    - pyparted
+    - pyudev
+    - dasbus
+
+tests:
+  - python:
+      imports:
+        - blivet
+        - blivet.devices
+        - blivet.formats

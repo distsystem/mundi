@@ -1,0 +1,157 @@
+diff --git a/vendor/github.com/containers/common/pkg/config/default.go b/vendor/github.com/containers/common/pkg/config/default.go
+index 02ff1284c..48368225d 100644
+--- a/vendor/github.com/containers/common/pkg/config/default.go
++++ b/vendor/github.com/containers/common/pkg/config/default.go
+@@ -197,7 +197,8 @@ func defaultConfig() (*Config, error) {
+ 		return nil, err
+ 	}
+ 
+-	defaultEngineConfig.SignaturePolicyPath = DefaultSignaturePolicyPath
++	defaultSigPath := FallbackToPathRelativeToExe(DefaultSignaturePolicyPath)
++	defaultEngineConfig.SignaturePolicyPath = defaultSigPath
+ 	// NOTE: For now we want Windows to use system locations.
+ 	// GetRootlessUID == -1 on Windows, so exclude negative range
+ 	if unshare.GetRootlessUID() > 0 {
+@@ -208,8 +209,8 @@ func defaultConfig() (*Config, error) {
+ 		sigPath := filepath.Join(configHome, DefaultRootlessSignaturePolicyPath)
+ 		defaultEngineConfig.SignaturePolicyPath = sigPath
+ 		if err := fileutils.Exists(sigPath); err != nil {
+-			if err := fileutils.Exists(DefaultSignaturePolicyPath); err == nil {
+-				defaultEngineConfig.SignaturePolicyPath = DefaultSignaturePolicyPath
++			if err := fileutils.Exists(defaultSigPath); err == nil {
++				defaultEngineConfig.SignaturePolicyPath = defaultSigPath
+ 			}
+ 		}
+ 	}
+@@ -321,6 +322,8 @@ func defaultPodmanshConfig() PodmanshConfig {
+ 
+ // defaultEngineConfig returns a default engine configuration. Note that the
+ // config is different for root and rootless. It also parses the storage.conf.
++var count = 0
++
+ func defaultEngineConfig() (*EngineConfig, error) {
+ 	c := new(EngineConfig)
+ 	tmp, err := defaultTmpDir()
+@@ -357,7 +360,8 @@ func defaultEngineConfig() (*EngineConfig, error) {
+ 	c.CompressionFormat = "gzip"
+ 
+ 	c.HealthcheckEvents = true
+-	c.HelperBinariesDir.Set(defaultHelperBinariesDir)
++	c.HelperBinariesDir.Set(append([]string{PathRelativeToExe("/usr/lib/podman"), filepath.Join(os.Getenv("CONDA_PREFIX"), "lib/podman")}, defaultHelperBinariesDir...))
++	count += 1
+ 	if additionalHelperBinariesDir != "" {
+ 		// Prioritize additionalHelperBinariesDir over defaults.
+ 		c.HelperBinariesDir.Set(append([]string{additionalHelperBinariesDir}, c.HelperBinariesDir.Get()...))
+diff --git a/vendor/github.com/containers/common/pkg/config/new.go b/vendor/github.com/containers/common/pkg/config/new.go
+index 407a685df..1f297bf09 100644
+--- a/vendor/github.com/containers/common/pkg/config/new.go
++++ b/vendor/github.com/containers/common/pkg/config/new.go
+@@ -148,6 +148,48 @@ func NewConfig(userConfigPath string) (*Config, error) {
+ 	return New(&Options{additionalConfigs: []string{userConfigPath}})
+ }
+ 
++// Get path to the running executable.
++func GetExePath() string {
++	exePath, err := os.Executable()
++	if err == nil {
++		return exePath
++	}
++	exeRealPath, err := filepath.EvalSymlinks(exePath)
++	if err == nil {
++		return exeRealPath
++	}
++	panic(err)
++}
++
++const conda = true
++
++// For Conda environments we transform default configuration paths like so:
++// (This assumes the executable always resides at PREFIX/bin/executable!)
++//
++//	/etc/path -> PREFIX/bin/../etc/path -> PREFIX/etc/path
++//	/usr/share/path -> PREFIX/bin/../share/path -> PREFIX/share/path
++func PathRelativeToExe(path string) string {
++	if !conda {
++		return path
++	}
++	relativePath := strings.TrimPrefix(path, "/usr")
++	prefix := filepath.Dir(filepath.Dir(GetExePath()))
++	if prefix == "/" {
++		prefix = os.Getenv("CONDA_PREFIX")
++	}
++	return filepath.Join(prefix, relativePath)
++}
++
++func FallbackToPathRelativeToExe(path string) string {
++	if !conda {
++		return path
++	}
++	if _, err := os.Stat(path); err == nil {
++		return path
++	}
++	return PathRelativeToExe(path)
++}
++
+ // Returns the list of configuration files, if they exist in order of hierarchy.
+ // The files are read in order and each new file can/will override previous
+ // file settings.
+@@ -159,7 +201,7 @@ func systemConfigs() (configs []string, finalErr error) {
+ 		return append(configs, path), nil
+ 	}
+ 
+-	configs = append(configs, DefaultContainersConfig)
++	configs = append(configs, PathRelativeToExe(DefaultContainersConfig))
+ 
+ 	var err error
+ 	path, err := overrideContainersConfigPath()
+diff --git a/vendor/github.com/containers/image/v5/pkg/sysregistriesv2/system_registries_v2.go b/vendor/github.com/containers/image/v5/pkg/sysregistriesv2/system_registries_v2.go
+index 1b161474d..0f4bada0d 100644
+--- a/vendor/github.com/containers/image/v5/pkg/sysregistriesv2/system_registries_v2.go
++++ b/vendor/github.com/containers/image/v5/pkg/sysregistriesv2/system_registries_v2.go
+@@ -11,6 +11,7 @@ import (
+ 	"sync"
+ 
+ 	"github.com/BurntSushi/toml"
++	"github.com/containers/common/pkg/config"
+ 	"github.com/containers/image/v5/docker/reference"
+ 	"github.com/containers/image/v5/types"
+ 	"github.com/containers/storage/pkg/fileutils"
+@@ -584,7 +585,7 @@ func newConfigWrapperWithHomeDir(ctx *types.SystemContext, homeDir string) confi
+ 	} else if ctx != nil && ctx.RootForImplicitAbsolutePaths != "" {
+ 		wrapper.configPath = filepath.Join(ctx.RootForImplicitAbsolutePaths, systemRegistriesConfPath)
+ 	} else {
+-		wrapper.configPath = systemRegistriesConfPath
++		wrapper.configPath = config.FallbackToPathRelativeToExe(systemRegistriesConfPath)
+ 	}
+ 
+ 	// potentially use both system and per-user dirs if not using per-user config file
+@@ -595,7 +596,7 @@ func newConfigWrapperWithHomeDir(ctx *types.SystemContext, homeDir string) confi
+ 		wrapper.configDirPath = filepath.Join(ctx.RootForImplicitAbsolutePaths, systemRegistriesConfDirPath)
+ 		wrapper.userConfigDirPath = userRegistriesDirPath
+ 	} else {
+-		wrapper.configDirPath = systemRegistriesConfDirPath
++		wrapper.configPath = config.FallbackToPathRelativeToExe(systemRegistriesConfPath)
+ 		wrapper.userConfigDirPath = userRegistriesDirPath
+ 	}
+ 
+diff --git a/vendor/github.com/containers/image/v5/signature/policy_config.go b/vendor/github.com/containers/image/v5/signature/policy_config.go
+index 8de705c22..513bad1ad 100644
+--- a/vendor/github.com/containers/image/v5/signature/policy_config.go
++++ b/vendor/github.com/containers/image/v5/signature/policy_config.go
+@@ -20,6 +20,7 @@ import (
+ 	"os"
+ 	"path/filepath"
+ 
++	"github.com/containers/common/pkg/config"
+ 	"github.com/containers/image/v5/docker/reference"
+ 	"github.com/containers/image/v5/signature/internal"
+ 	"github.com/containers/image/v5/transports"
+@@ -81,7 +82,7 @@ func defaultPolicyPathWithHomeDir(sys *types.SystemContext, homeDir string, syst
+ 		return filepath.Join(sys.RootForImplicitAbsolutePaths, systemPolicyPath), nil
+ 	}
+ 	if err := fileutils.Exists(systemPolicyPath); err == nil {
+-		return systemPolicyPath, nil
++		return config.FallbackToPathRelativeToExe(systemPolicyPath), nil
+ 	}
+ 	return "", fmt.Errorf("no policy.json file found at any of the following: %q, %q", userPolicyFilePath, systemPolicyPath)
+ }

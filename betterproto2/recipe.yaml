@@ -1,0 +1,48 @@
+context:
+  name: "betterproto2"
+  git_url: https://github.com/betterproto/python-betterproto2
+  git_tag: lib-v0.9.1
+  version: ${{ git_tag[5:] }}
+  build_number: 0
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  - git: ${{ git_url }}
+    tag: ${{ git_tag }}
+
+build:
+  number: ${{ build_number }}
+  noarch: python
+  python:
+    entry_points:
+      - protoc-gen-python_betterproto2=betterproto2_compiler.plugin:main
+  script:
+    - pip install ./betterproto2 -vv
+    - pip install ./betterproto2_compiler -vv
+
+requirements:
+  host:
+    - python >=3.10
+    - pip
+    - hatchling
+  run:
+    - python >=3.10
+    - grpclib >=0.4.8
+    - python-dateutil >=2.9.0.post0
+    - typing-extensions >=4.7.1,<5
+    - jinja2 >=3.0.3
+    - ruff
+    - strenum
+
+tests:
+  - python:
+      imports:
+        - betterproto2
+        - betterproto2_compiler
+      pip_check: false
+  - script:
+      - protoc-gen-python_betterproto2 --help
+      - cat $(which protoc-gen-python_betterproto2)

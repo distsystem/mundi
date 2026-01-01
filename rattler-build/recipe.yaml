@@ -1,0 +1,39 @@
+context:
+  git_url: https://github.com/prefix-dev/rattler-build.git
+  git_tag: v0.47.1
+  name: ${{ git_url | split('/') | last | split('.') | first }}-fork
+  version: ${{ git_tag[1:] }}
+  build_number: 0
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  - git: ${{ git_url }}
+    tag: ${{ git_tag }}
+    patches:
+      - fix.patch
+
+build:
+  number: ${{ build_number }}
+  string: patch_${{ hash }}_${{ build_number }}
+  script:
+    - export OPENSSL_DIR="$PREFIX"
+    - cargo install --locked --bin rattler-build --root ${PREFIX} --path . --no-track
+    - cargo-bundle-licenses --format yaml --output ${SRC_DIR}/THIRDPARTY.yml
+
+requirements:
+  build:
+    - ${{ compiler('rust') }}
+    - ${{ stdlib('c') }}
+    - ${{ compiler('c') }}
+    - cargo-bundle-licenses
+  host:
+    - ${{ "openssl" if linux }}
+  run:
+    - ${{ "patchelf" if linux }}
+
+tests:
+  - script:
+      - rattler-build --help

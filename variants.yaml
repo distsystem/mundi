@@ -1,0 +1,16 @@
+python:
+  - "3.10"
+pytorch:
+  - 2.8.0
+cuda:
+  - 12.9.*
+cuda_compiler:
+  - cuda-nvcc
+cuda_compiler_version:
+  - "12.9"
+TORCH_CUDA_ARCH_LIST:
+  - 8.0 8.9 9.0+PTX
+CMAKE_CUDA_ARCHITECTURES:
+  - "80;89;90"
+max_build_jobs:
+  - 32

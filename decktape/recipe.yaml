@@ -1,0 +1,29 @@
+context:
+  git_url: https://github.com/astefanutti/decktape
+  git_tag: v3.15.0
+  name: ${{ git_url | split('/') | last | split('.') | first }}
+  build_number: 0
+  version: ${{ git_tag[1:] }}
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  - git: ${{ git_url }}
+    tag: ${{ git_tag }}
+requirements:
+  build:
+    - nodejs
+  run:
+    - nodejs
+build:
+  number: ${{ build_number }}
+  script:
+    - npm install
+    # - npm run build
+    - npm pack
+    - npm install -ddd -g --prefix $PREFIX $(ls *.tgz)
+tests:
+  - script:
+      - ${{ name }} --help

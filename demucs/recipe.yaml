@@ -1,0 +1,32 @@
+context:
+  name: "demucs"
+  git_url: https://github.com/facebookresearch/demucs
+  git_tag: v4.0.1
+  build_number: 0
+  version: ${{ git_tag[1:] }}
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  - git: ${{ git_url }}
+build:
+  number: ${{ build_number }}
+  noarch: python
+  script:
+    - pip install . -vv
+
+requirements:
+  host:
+    - python
+    - pip
+    - packaging
+    - setuptools
+    - pipreqs
+  # run:
+  #   - pytorch
+# tests:
+#   - python:
+#       imports:
+#         - demucs.audio

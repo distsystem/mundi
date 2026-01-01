@@ -1,0 +1,67 @@
+context:
+  git_url: https://github.com/facebook/folly.git
+  git_tag: "v2025.08.18.00"
+  name: ${{ git_url | split('/') | last | split('.') | first }}
+  version: ${{ git_tag[1:] }}
+  build_number: 0
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  - git: ${{ git_url }}
+    tag: ${{ git_tag }}
+    patches:
+      - 0001-Use-CMAKE_SYSTEM_PROCESSOR-instead-of-CMAKE_LIBRARY_.patch
+      - 0002-Add-missing-unistd-include.patch
+      - 0003-Add-missing-stdexcept-include.patch
+
+requirements:
+  build:
+    - ${{ compiler('cxx') }}
+    - ${{ compiler('c') }}
+    - ${{ stdlib('c') }}
+    - ${{ stdlib('cxx') }}
+    - cmake
+    - ninja
+    - make
+  host:
+    - libboost-devel
+    - double-conversion
+    - fmt
+    - fast_float
+    - gflags
+    - glog
+    - jemalloc
+    - libaio
+    - libevent
+    - libsodium
+    - snappy
+    - bzip2
+    - lz4-c
+    - openssl
+    - liblzma-devel
+    - zlib
+    - zstd
+  run_exports:
+    - ${{ pin_subpackage(name, lower_bound="x.x.x.x", upper_bound="x.x.x.x") }}
+
+build:
+  number: ${{ build_number }}
+  script:
+    - cd build
+    - |
+      export CXXFLAGS="$CXXFLAGS -DGLOG_USE_GLOG_EXPORT"
+      export CXXFLAGS="$CXXFLAGS -DFOLLY_HAVE_SO_TIMESTAMPING=0"
+      export CXXFLAGS="$CXXFLAGS -D__STDC_FORMAT_MACROS"
+      export CXXFLAGS="$CXXFLAGS -DFOLLY_HAVE_CLOCK_GETTIME=1"
+      export CXXFLAGS="$CXXFLAGS -fpermissive"
+      export CXXFLAGS="$CXXFLAGS -flax-vector-conversions"
+    - cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 ${CMAKE_ARGS} -Wno-dev -GNinja -DBUILD_SHARED_LIBS=ON ..
+    - cmake --build . --parallel $CPU_COUNT
+    - cmake --install .
+
+tests:
+  - script:
+      - ldd $PREFIX/lib/libfolly.so

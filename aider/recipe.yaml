@@ -1,0 +1,79 @@
+context:
+  name: "aider-chat"
+  git_url: https://github.com/Aider-AI/aider.git
+  git_tag: v0.81.1
+  build_number: 0
+
+package:
+  name: ${{ name }}
+  version: ${{ git_tag[1:] }}
+
+source:
+  git: ${{ git_url }}
+  tag: ${{ git_tag }}
+
+build:
+  number: ${{ build_number }}
+  noarch: python
+  script:
+    - pip install . -vv
+  python:
+    entry_points:
+      - aider = aider.main:main
+
+requirements:
+  host:
+    - setuptools >=68
+    - setuptools_scm >=8
+    - python <3.13, >=3.9
+    - pip
+    - pipreqs
+  run:
+    # - python < 3.13
+    - pydub
+    - configargparse
+    - gitpython
+    - jsonschema
+    - rich
+    - prompt_toolkit
+    - backoff
+    - pathspec
+    - diskcache
+    - grep-ast
+    - packaging
+    - python-sounddevice
+    - pysoundfile
+    - beautifulsoup4
+    - pyyaml
+    - diff-match-patch
+    - pypandoc
+    - litellm
+    - flake8
+    - importlib-resources
+    - pyperclip
+    - posthog
+    - mixpanel
+    - pexpect
+    - json5
+    - psutil
+    - watchfiles
+    - socksio
+    - pip
+    - pillow
+    - networkx
+    - scipy
+    - importlib-metadata
+    - shtab
+
+
+tests:
+  - script:
+      # - $PREFIX/bin/pipreqs $SRC_DIR
+      - aider --help
+  - python:
+      imports:
+        - pydub.utils
+        - aider
+      pip_check: false
+about:
+  summary: Aider is AI pair programming in your terminal

@@ -1,0 +1,10 @@
+c_compiler:
+  - gcc
+cxx_compiler:
+  - gxx
+c_stdlib_version:
+  - "2.28"
+c_stdlib:
+  - sysroot
+cxx_stdlib:
+  - libstdcxx-devel

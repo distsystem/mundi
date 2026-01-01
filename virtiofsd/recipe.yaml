@@ -1,0 +1,42 @@
+context:
+  git_url: https://gitlab.com/virtio-fs/virtiofsd
+  git_tag: v1.13.2
+  name: ${{ git_url | split('/') | last }}
+  version: ${{ git_tag[1:] }}
+  build_number: 0
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  - git: ${{ git_url }}
+    tag: ${{ git_tag }}
+
+build:
+  number: ${{ build_number }}
+  script:
+    # - cargo build --release --locked
+    - unset CARGO_TARGET_DIR
+    - export LIBCLANG_PATH=$PREFIX/lib
+    - export CARGO_BUILD_RUSTFLAGS="$CARGO_BUILD_RUSTFLAGS -C link-arg=-L$PREFIX/lib"
+    # - export RUSTFLAGS=$CFLAGS
+    - cargo install --root $PREFIX --path .
+
+requirements:
+  build:
+    - ${{ compiler("rust") }}
+    - ${{ compiler("c") }}
+    - ${{ stdlib("c") }}
+    - pkg-config
+  host:
+    - libclang
+    - libseccomp
+    - libcap-ng
+  run:
+    - libcap-ng
+
+tests:
+  - script:
+      - ${{ name }} --help
+      - ldd $(which ${{ name }})

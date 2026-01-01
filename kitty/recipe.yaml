@@ -1,0 +1,31 @@
+context:
+  git_url: https://github.com/kovidgoyal/kitty.git
+  git_tag: v0.42.2
+  name: ${{ git_url | split('/') | last | split('.') | first }}
+  build_number: 0
+  version: ${{ git_tag[1:] }}
+
+recipe:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  - git: ${{ git_url }}
+    tag: ${{ git_tag }}
+
+outputs:
+  - package:
+      name: ${{ name }}-terminfo
+    build:
+      number: ${{ build_number }}
+      script:
+        - mkdir -p $PREFIX/share/terminfo
+        - tic -x -o $PREFIX/share/terminfo terminfo/kitty.terminfo
+    requirements:
+      build:
+        - ncurses
+      run:
+        - ncurses
+    tests:
+      - script:
+          - TERM=xterm-kitty infocmp

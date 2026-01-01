@@ -1,0 +1,29 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Pulumi ESC
+        uses: pulumi/esc-action@v1
+        with:
+          environment: distsystem-dev/distsystem-dev
+
+      - name: Verify GITHUB_TOKEN
+        run: |
+          echo "GITHUB_TOKEN is available: ${GITHUB_TOKEN:+yes}"
+
+      - name: Setup pixi
+        uses: ./.github/pixi-setup
+

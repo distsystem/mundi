@@ -1,0 +1,58 @@
+name: "Build Package"
+description: "Common build steps for package building"
+inputs:
+  package:
+    description: "Package name to build"
+    required: true
+  upload_condition:
+    description: "Whether to upload the package"
+    required: false
+    default: 'false'
+  github_token:
+    description: "GitHub token for authentication"
+    required: true
+  s3_access_key_id:
+    description: "S3 Access Key ID"
+    required: false
+  s3_secret_access_key:
+    description: "S3 Secret Access Key"
+    required: false
+  s3_endpoint_url:
+    description: "S3 Endpoint URL"
+    required: false
+
+runs:
+  using: "composite"
+  steps:
+    - name: Setup pixi
+      uses: ./.github/pixi-setup
+
+    - name: Cache build tools (ccache/sccache)
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cache/ccache
+          ~/.cache/sccache
+        key: ${{ runner.os }}-build-cache-${{ inputs.package }}-${{ hashFiles('**/recipe.yaml') }}
+        restore-keys: |
+          ${{ runner.os }}-build-cache-${{ inputs.package }}-
+
+    - name: Dry-run build
+      shell: bash
+      run: |
+        pixi run build-dry package=${{ inputs.package }}
+
+    - name: Build package (with conditional upload)
+      shell: bash
+      run: |
+        if [[ "${{ inputs.upload_condition }}" == "true" ]]; then
+          echo "Building and uploading package..."
+          pixi run build-upload ${{ inputs.package }}
+        else
+          echo "Building package only (no upload for PR/other events)..."
+          pixi run build ${{ inputs.package }}
+        fi
+      env:
+        S3_ACCESS_KEY_ID: ${{ inputs.s3_access_key_id }}
+        S3_SECRET_ACCESS_KEY: ${{ inputs.s3_secret_access_key }}
+        S3_ENDPOINT_URL: ${{ inputs.s3_endpoint_url }}

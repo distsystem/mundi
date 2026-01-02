@@ -22,49 +22,43 @@ jobs:
   detect-changes:
     runs-on: ubuntu-latest
     outputs:
-      has_changes: ${{ steps.detect-packages.outputs.has_changes }}
-      build_matrix: ${{ steps.detect-packages.outputs.build_matrix }}
-    env:
-      PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
+      has_changes: ${{ steps.build-matrix.outputs.has_changes }}
+      build_matrix: ${{ steps.build-matrix.outputs.matrix }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          ref: ${{ github.event.pull_request.head.ref || github.ref_name }}
 
-      - uses: pulumi/esc-action@v1
+      - name: Get changed files
+        id: changed-files
+        if: github.event.inputs.package_name == ''
+        uses: tj-actions/changed-files@v46
         with:
-          environment: distsystem-dev/distsystem-dev
+          files: "**/recipe.yaml"
+          dir_names: true
+          dir_names_max_depth: 1
 
-      - uses: actions/checkout@v4
-        with:
-          repository: distsystem/meta-forge
-          path: ../meta-forge
-
-      - uses: ./.github/pixi-setup
-
-      - name: Detect changed packages
-        id: detect-packages
+      - name: Build matrix
+        id: build-matrix
         run: |
           if [[ -n "${{ github.event.inputs.package_name }}" ]]; then
-            MATRIX='[{"package":"${{ github.event.inputs.package_name }}"}]'
+            # Manual trigger with specific package
+            PACKAGES='["${{ github.event.inputs.package_name }}"]'
+          elif [[ -n "${{ steps.changed-files.outputs.all_changed_files }}" ]]; then
+            # Convert space-separated dirs to JSON array
+            PACKAGES=$(echo '${{ steps.changed-files.outputs.all_changed_files }}' | jq -Rc 'split(" ")')
           else
-            MATRIX=$(pixi run meta changes)
-          fi
-          echo "Matrix output: $MATRIX"
-          if [ "$MATRIX" = "[]" ]; then
-            echo "has_changes=false" >> $GITHUB_OUTPUT
-            echo "build_matrix=[]" >> $GITHUB_OUTPUT
-          else
-            echo "has_changes=true" >> $GITHUB_OUTPUT
-            echo "build_matrix=$MATRIX" >> $GITHUB_OUTPUT
+            PACKAGES='[]'
           fi
 
-      - uses: mxschmitt/action-tmate@v3
-        if: failure()
-        timeout-minutes: 15
-        with:
-          limit-access-to-actor: true
+          echo "Packages: $PACKAGES"
+          if [ "$PACKAGES" = "[]" ]; then
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+            echo "matrix={\"package\":[]}" >> $GITHUB_OUTPUT
+          else
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+            echo "matrix={\"package\":$PACKAGES}" >> $GITHUB_OUTPUT
+          fi
 
   build-packages:
     needs: detect-changes
@@ -73,8 +67,7 @@ jobs:
     env:
       PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
     strategy:
-      matrix:
-        include: ${{ fromJson(needs.detect-changes.outputs.build_matrix) }}
+      matrix: ${{ fromJson(needs.detect-changes.outputs.build_matrix) }}
       fail-fast: false
     name: Build ${{ matrix.package }}
     steps:
@@ -84,12 +77,10 @@ jobs:
 
       - uses: pulumi/esc-action@v1
         with:
-          environment: distsystem-dev/distsystem-dev
+          environment: distsystem-dev/mundi
 
-      - uses: actions/checkout@v4
-        with:
-          repository: distsystem/meta-forge
-          path: ../meta-forge
+      - name: Clone meta-forge
+        run: gh repo clone distsystem/meta-forge ../meta-forge -- --depth 1
 
       - uses: ./.github/pixi-setup
 

@@ -34,16 +34,12 @@ cmd = "meta build {{package}} --skip-existing none"
 depends-on = [{ task = "clean", args = ["{{package}}"] }]
 args = ["package"]
 
-[tasks.upload]
-cmd = "meta upload"
-
-[tasks.index]
-cmd = "rattler-index s3 s3://pytorch"
+[tasks.build-upload]
+cmd = "meta build {{package}} --upload"
+args = ["package"]
 
 [tasks.clean-output]
 cmd = "rm -rf output/linux-64 output/noarch output/broken"
-
-[tasks.ctr]
 
 [dependencies]
 rattler-build = "*"
@@ -54,6 +50,9 @@ rattler-index = "*"
 
 [pypi-dependencies]
 meta = { path = "../meta-forge", editable = true }
+
+[feature.dev.dependencies]
+pulumi = "*"
 
 
 [activation.env]
@@ -66,3 +65,6 @@ S3_REGION = "us-east-1"
 S3_FORCE_PATH_STYLE = "true"
 # RATTLER_BUILD_COLOR = "never"
 RATTLER_SHARDED = "false"
+
+[environments]
+dev = { features = ["dev"] }

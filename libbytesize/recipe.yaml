@@ -1,0 +1,92 @@
+# Library for handling sizes in bytes (parsing, formatting, conversions)
+# Used by libblockdev and other storage tools
+# Reference: https://github.com/storaged-project/libbytesize
+context:
+  git_url: https://github.com/storaged-project/libbytesize.git
+  git_tag: "2.12"
+  name: libbytesize
+  version: ${{ git_tag }}
+  build_number: 1
+
+recipe:
+  name: ${{ name }}
+  version: ${{ version }}
+
+cache:
+  source:
+    - git: ${{ git_url }}
+      tag: ${{ git_tag }}
+
+  build:
+    script:
+      - export ACLOCAL_PATH="$PREFIX/share/aclocal:$ACLOCAL_PATH"
+      - ./autogen.sh
+      - |
+        ./configure --prefix=$PREFIX \
+          --with-python3 \
+          --without-gtk-doc \
+          --without-tools
+      - make -j$CPU_COUNT
+      - make install
+
+  requirements:
+    build:
+      - ${{ compiler('c') }}
+      - ${{ stdlib('c') }}
+      - autoconf
+      - autoconf-archive
+      - automake
+      - libtool
+      - pkg-config
+      - make
+      - gettext
+    host:
+      - gmp
+      - mpfr
+      - pcre2
+      - python
+      - gobject-introspection
+    ignore_run_exports:
+      from_package:
+        - python
+
+outputs:
+  - package:
+      name: python-bytesize
+    build:
+      noarch: python
+      number: ${{ build_number }}
+      files:
+        include:
+          - lib/python*
+    requirements:
+      run:
+        - python >=3.6
+        - pygobject
+        - ${{ pin_subpackage(name, exact=True) }}
+    tests:
+      - python:
+          imports:
+            - bytesize
+
+  - package:
+      name: ${{ name }}
+    build:
+      number: ${{ build_number }}
+      files:
+        include:
+          - "*"
+        exclude:
+          - lib/python*
+    requirements:
+      run:
+        - gmp
+        - mpfr
+        - pcre2
+      run_exports:
+        - ${{ pin_subpackage(name, upper_bound="x.x") }}
+    tests:
+      - script:
+          - test -f $PREFIX/lib/libbytesize.so
+          - test -f $PREFIX/lib/pkgconfig/bytesize.pc
+          - pkg-config --modversion bytesize

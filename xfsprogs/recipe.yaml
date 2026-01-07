@@ -1,0 +1,77 @@
+# XFS filesystem utilities
+# Reference: Alpine APKBUILD, Arch PKGBUILD
+context:
+  git_url: https://git.kernel.org/pub/scm/fs/xfs/xfsprogs-dev
+  git_tag: v6.17.0
+  name: xfsprogs
+  version: ${{ git_tag[1:] }}
+  build_number: 1
+
+cache:
+  source:
+    git: ${{ git_url }}
+    tag: ${{ git_tag }}
+  requirements:
+    build:
+      - ${{ compiler('c') }}
+      - ${{ compiler('cxx') }}
+      - ${{ stdlib('c') }}
+      - autoconf
+      - automake
+      - libtool
+      - grep
+      - pkg-config
+      - make
+      - gzip
+      - gettext-tools
+    host:
+      - libuuid
+      - libinih
+      - liburcu
+      - libedit
+      - util-linux
+  build:
+    script:
+      - ln -sf $BUILD_PREFIX/bin/make $BUILD_PREFIX/bin/gmake
+      - export OPTIMIZER=" "
+      - make configure
+      - ./configure --prefix=$PREFIX --enable-editline=yes --disable-gettext
+      - make headers
+      - make libhandle
+      - make -j$CPU_COUNT
+      - make install install-dev
+
+outputs:
+  - package:
+      name: xfslibs-dev
+      version: ${{ version }}
+    build:
+      number: ${{ build_number }}
+      files:
+        include:
+          - include/*/**
+          - lib/**
+    requirements:
+      run_exports:
+        - ${{ pin_subpackage('xfslibs-dev', lower_bound="x.x.x", upper_bound="x.x.x") }}
+    tests:
+      - script:
+          - test -f $PREFIX/lib/libhandle.so
+
+  - package:
+      name: ${{ name }}
+      version: ${{ version }}
+    build:
+      number: ${{ build_number }}
+      files:
+        include:
+          - bin/**
+          - sbin/**
+          - share/man/**
+          - share/xfsprogs/**
+    requirements:
+      run:
+        - ${{ pin_subpackage('xfslibs-dev', exact=true) }}
+    tests:
+      - script:
+          - xfs_info -V

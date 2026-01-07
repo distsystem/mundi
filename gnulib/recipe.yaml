@@ -1,0 +1,42 @@
+# GNU Gnulib - portability library for GNU projects
+# Provides gnulib-tool for importing portable source modules
+# Reference: https://www.gnu.org/software/gnulib/
+context:
+  git_url: https://github.com/coreutils/gnulib
+  git_tag: v1.0
+  name: gnulib
+  version: ${{ git_tag[1:] }}
+  build_number: 1
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  git: ${{ git_url }}
+  tag: ${{ git_tag }}
+
+build:
+  number: ${{ build_number }}
+  noarch: generic
+  script:
+    - mkdir -p $PREFIX/share/gnulib
+    # Copy all files including hidden ones, dereference symlinks
+    - cp -rL . $PREFIX/share/gnulib/
+    - rm -rf $PREFIX/share/gnulib/.git
+    - mkdir -p $PREFIX/bin
+    # Create wrapper that runs gnulib-tool from its directory
+    - |
+      cat > $PREFIX/bin/gnulib-tool << 'EOF'
+      #!/bin/sh
+      exec "$CONDA_PREFIX/share/gnulib/gnulib-tool" "$@"
+      EOF
+    - chmod +x $PREFIX/bin/gnulib-tool
+
+requirements:
+  run:
+    - python >=3.7
+
+tests:
+  - script:
+      - gnulib-tool --version

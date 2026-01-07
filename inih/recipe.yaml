@@ -1,0 +1,33 @@
+context:
+  git_url: https://github.com/benhoyt/inih.git
+  git_tag: r61
+  name: ${{ git_url | split('/') | last | split('.') | first }}
+  build_number: 1
+  version: 0.${{ git_tag[1:] }}
+
+package:
+  name: lib${{ name }}
+  version: ${{ version }}
+
+source:
+  git: ${{ git_url }}
+  tag: ${{ git_tag }}
+requirements:
+  build:
+    - ${{ compiler('cxx') }}
+    - ${{ compiler('c') }}
+    - ${{ stdlib('c') }}
+    - meson
+    - ninja
+    - pkg-config
+  run_exports:
+    - ${{ pin_subpackage('lib'+name, exact=True) }}
+build:
+  number: ${{ build_number }}
+  script:
+    - meson setup builddir $MESON_ARGS
+    - meson compile -C builddir
+    - meson install -C builddir
+tests:
+  - script:
+      - ldd $PREFIX/lib/libinih.so

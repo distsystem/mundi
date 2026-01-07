@@ -1,0 +1,127 @@
+# C library for block device manipulation with GObject introspection
+# Plugin-based architecture for storage technologies (LVM, Btrfs, LUKS, etc.)
+# Reference: https://storaged.org/libblockdev/
+#
+# Build notes:
+# - Enabled plugins: loop, swap, part, fs, dm, lvm, btrfs, mdraid, nvme, mpath
+# - Disabled plugins: crypto/escrow (needs cryptsetup+nss+volume_key),
+#   nvdimm (needs ndctl), smart (needs libatasmart)
+context:
+  git_url: https://github.com/storaged-project/libblockdev.git
+  git_tag: 3.4.0
+  name: libblockdev
+  version: ${{ git_tag }}
+  build_number: 3
+
+recipe:
+  name: ${{ name }}
+  version: ${{ version }}
+
+cache:
+  source:
+    - git: ${{ git_url }}
+      tag: ${{ git_tag }}
+
+  build:
+    script:
+      - export ACLOCAL_PATH="$PREFIX/share/aclocal:$ACLOCAL_PATH"
+      - ./autogen.sh
+      - |
+        ./configure --prefix=$PREFIX \
+          --with-python3 \
+          --with-nvme \
+          --without-escrow \
+          --without-crypto \
+          --without-lvm_dbus \
+          --with-mpath \
+          --without-nvdimm \
+          --without-smart \
+          --without-smartmontools \
+          --without-s390 \
+          --without-tools \
+          --without-gtk-doc
+      - make -j$CPU_COUNT
+      - make install
+      # Remove disabled plugins from config to avoid "failed to load module" warnings
+      - sed -i '/^\[crypto\]/,/^$/d; /^\[nvdimm\]/,/^$/d; /^\[smart\]/,/^$/d; /^\[s390\]/,/^$/d' $PREFIX/etc/libblockdev/3/conf.d/00-default.cfg
+
+  requirements:
+    build:
+      - ${{ compiler('c') }}
+      - ${{ stdlib('c') }}
+      - autoconf
+      - autoconf-archive
+      - automake
+      - libtool
+      - pkg-config
+      - make
+    host:
+      - glib
+      - gobject-introspection
+      - kmod
+      - libbytesize
+      - libdevmapper
+      - libnvme
+      - libudev
+      - python
+      - util-linux
+      - e2fsprogs
+      - yaml
+      - zlib
+    ignore_run_exports:
+      from_package:
+        - python
+
+outputs:
+  - package:
+      name: python-blockdev
+    build:
+      noarch: python
+      number: ${{ build_number }}
+      files:
+        include:
+          - lib/python*
+    requirements:
+      run:
+        - python >=3.6
+        - pygobject
+        - python-bytesize
+        - ${{ pin_subpackage(name, exact=True) }}
+    tests:
+      - python:
+          imports:
+            - gi.repository.BlockDev
+
+  - package:
+      name: ${{ name }}
+    build:
+      number: ${{ build_number }}
+      files:
+        include:
+          - "*"
+        exclude:
+          - lib/python*
+    requirements:
+      run:
+        - glib
+        - gobject-introspection
+        - kmod
+        - libbytesize
+        - libdevmapper
+        - libnvme
+        - libudev
+        - util-linux
+        - yaml
+      run_exports:
+        - ${{ pin_subpackage(name, upper_bound="x.x") }}
+    tests:
+      - script:
+          - test -f $PREFIX/lib/libblockdev.so
+          - test -f $PREFIX/lib/pkgconfig/blockdev.pc
+          - pkg-config --modversion blockdev
+          - test -f $PREFIX/lib/girepository-1.0/BlockDev-3.0.typelib
+      - script:
+          - python -c "import blivet"
+        requirements:
+          run:
+            - blivet

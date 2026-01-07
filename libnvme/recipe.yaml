@@ -1,0 +1,53 @@
+# C library for NVMe device management on Linux
+# Provides APIs for NVMe device discovery, management, and I/O
+# Reference: https://github.com/linux-nvme/libnvme
+context:
+  git_url: https://github.com/linux-nvme/libnvme.git
+  git_tag: v1.16.1
+  name: libnvme
+  version: ${{ git_tag[1:] }}
+  build_number: 1
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  git: ${{ git_url }}
+  tag: ${{ git_tag }}
+
+build:
+  number: ${{ build_number }}
+  script:
+    - |
+      meson setup build $MESON_ARGS \
+        -Ddocs=false \
+        -Dtests=false \
+        -Dpython=disabled \
+        -Dopenssl=disabled \
+        -Dkeyutils=disabled \
+        -Dliburing=disabled
+    - ninja -C build -j$CPU_COUNT
+    - ninja -C build install
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ stdlib('c') }}
+    - meson
+    - ninja
+    - pkg-config
+  host:
+    - json-c
+    - dbus
+  run:
+    - json-c
+    - dbus
+  run_exports:
+    - ${{ pin_subpackage(name, upper_bound="x.x") }}
+
+tests:
+  - script:
+      - test -f $PREFIX/lib/libnvme.so
+      - test -f $PREFIX/lib/pkgconfig/libnvme.pc
+      - pkg-config --modversion libnvme

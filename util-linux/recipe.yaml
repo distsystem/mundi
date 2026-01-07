@@ -1,0 +1,98 @@
+# util-linux - Linux system utility libraries
+# Provides libblkid, libmount, libuuid, libfdisk, libsmartcols
+# Reference: https://github.com/util-linux/util-linux
+# Build strategy: Libraries only, no CLI tools (--disable-all-programs)
+context:
+  git_url: https://github.com/util-linux/util-linux
+  git_tag: v2.41.3
+  name: util-linux
+  version: ${{ git_tag[1:] }}
+  build_number: 2
+
+recipe:
+  name: ${{ name }}
+  version: ${{ version }}
+
+cache:
+  source:
+    - git: ${{ git_url }}
+      tag: ${{ git_tag }}
+
+  build:
+    script:
+      # autoreconf for git source
+      - ./autogen.sh
+      # Configure: libraries only, no tools, no systemd
+      - |
+        ./configure --prefix=$PREFIX \
+          --disable-static \
+          --disable-all-programs \
+          --enable-libblkid \
+          --enable-libmount \
+          --enable-libuuid \
+          --enable-libfdisk \
+          --enable-libsmartcols \
+          --without-systemd \
+          --with-python \
+          --enable-pylibmount \
+          --disable-makeinstall-chown \
+          --disable-makeinstall-setuid
+      - make -j$CPU_COUNT
+      - make install
+
+  requirements:
+    build:
+      - ${{ compiler('c') }}
+      - ${{ stdlib('c') }}
+      - autoconf
+      - automake
+      - libtool
+      - pkg-config
+      - make
+      - gettext
+      - bison
+      - swig
+    host:
+      - zlib
+      - ncurses
+      - readline
+      - python
+    ignore_run_exports:
+      from_package:
+        - ${{ compiler('c') }}
+        - python
+
+outputs:
+  - package:
+      name: python-libmount
+    requirements:
+      host:
+        - python
+      run:
+        - python
+        - ${{ pin_subpackage(name, exact=True) }}
+    build:
+      number: ${{ build_number }}
+      files:
+        include:
+          - lib/python*
+    tests:
+      - python:
+          imports:
+            - libmount
+
+  - package:
+      name: ${{ name }}
+    requirements:
+      run_exports:
+        - ${{ pin_subpackage(name, upper_bound="x.x") }}
+    build:
+      number: ${{ build_number }}
+      files:
+        include:
+          - "*"
+        exclude:
+          - lib/python*
+    tests:
+      - script:
+          - test -f $PREFIX/lib/libmount.so

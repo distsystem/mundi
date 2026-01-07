@@ -1,0 +1,14 @@
+--- a/src/plugins/loop.c
++++ b/src/plugins/loop.c
+@@ -10,6 +10,12 @@
+ #include "check_deps.h"
+ #include "loop.h"
+
++/* LO_FLAGS_DIRECT_IO was added in Linux 4.10, define for older headers */
++#ifndef LO_FLAGS_DIRECT_IO
++#define LO_FLAGS_DIRECT_IO 16
++#endif
++
+ /**
+  * SECTION: loop
+  * @short_description: plugin for operations with loop devices

@@ -1,0 +1,122 @@
+# libuser: User/group account administration library with Python bindings
+# Provides standardized interface for manipulating user and group accounts
+# Reference: https://pagure.io/libuser
+#
+# Build notes:
+# - Uses CDT package for PAM (CentOS 7 repackaged libs)
+# - SELinux and audit support disabled for portability
+# - LDAP support via openldap from conda-forge
+# - Python bindings built alongside C library
+context:
+  git_url: https://pagure.io/libuser.git
+  git_tag: libuser-0.64
+  name: libuser
+  version: "0.64"
+  build_number: 0
+
+recipe:
+  name: ${{ name }}
+  version: ${{ version }}
+
+cache:
+  source:
+    - git: ${{ git_url }}
+      tag: ${{ git_tag }}
+
+  build:
+    script:
+      # Disable docs: remove from SUBDIRS and AC_CONFIG_FILES to skip gtk-doc and SGML tools
+      - mkdir -p admin m4
+      - echo 'AC_DEFUN([GTK_DOC_CHECK], [])' > m4/gtk-doc.m4
+      - sed -i 's/SUBDIRS = po docs/SUBDIRS = po/' Makefile.am
+      - sed -i 's| docs/Makefile docs/reference/Makefile||' configure.ac
+      - libtoolize --force
+      - autopoint -f
+      - aclocal -Wall -I m4
+      - autoconf -Wall
+      - autoheader -Wall
+      - automake --add-missing --copy
+      - |
+        ./configure --prefix=$PREFIX \
+          --sysconfdir=$PREFIX/etc \
+          --without-selinux \
+          --with-ldap \
+          --without-audit \
+          --disable-gtk-doc \
+          --disable-gtk-doc-html \
+          --disable-rpath \
+          PYTHON=$PREFIX/bin/python
+      - make -j$CPU_COUNT
+      - make install
+
+  requirements:
+    build:
+      - ${{ compiler('c') }}
+      - ${{ stdlib('c') }}
+      - autoconf
+      - automake
+      - libtool
+      - pkg-config
+      - make
+      - gettext
+      - bison
+      # CDT packages for PAM (user/group management requires PAM)
+      - ${{ cdt('pam-devel') }}
+      - ${{ cdt('pam') }}
+    host:
+      - glib
+      - popt
+      - openldap
+      - python
+      - cyrus-sasl
+    ignore_run_exports:
+      from_package:
+        - python
+
+outputs:
+  - package:
+      name: python-libuser
+    build:
+      noarch: python
+      number: ${{ build_number }}
+      skip:
+        - not match(python, "3.12.*")
+      files:
+        include:
+          - lib/python*
+    requirements:
+      run:
+        - python >=3.6
+        - ${{ pin_subpackage(name, exact=True) }}
+    tests:
+      - python:
+          imports:
+            - libuser
+
+  - package:
+      name: ${{ name }}
+    build:
+      number: ${{ build_number }}
+      files:
+        include:
+          - "*"
+        exclude:
+          - lib/python*
+    requirements:
+      run:
+        - glib
+        - popt
+        - openldap
+      run_exports:
+        - ${{ pin_subpackage(name, upper_bound='x.x') }}
+    tests:
+      - script:
+          - test -f $PREFIX/lib/libuser.so
+          - test -f $PREFIX/lib/pkgconfig/libuser.pc
+          - pkg-config --modversion libuser
+
+about:
+  homepage: https://pagure.io/libuser
+  license: LGPL-2.1-or-later
+  license_file: COPYING
+  summary: User and group account administration library

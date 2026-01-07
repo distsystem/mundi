@@ -1,0 +1,60 @@
+# GNU Parted - partition manipulation library and tool
+# Provides libparted for partition table and filesystem operations
+# Reference: https://www.gnu.org/software/parted/
+context:
+  git_url: https://git.savannah.gnu.org/git/parted.git
+  git_tag: v3.6
+  name: parted
+  version: ${{ git_tag[1:] }}
+  build_number: 1
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  git: ${{ git_url }}
+  tag: ${{ git_tag }}
+
+build:
+  number: ${{ build_number }}
+  script:
+    - export GNULIB_SRCDIR=$BUILD_PREFIX/share/gnulib
+    - ./bootstrap --gnulib-srcdir=$GNULIB_SRCDIR
+    - |
+      ./configure --prefix=$PREFIX \
+        --disable-static \
+        --disable-gcc-warnings \
+        --without-readline
+    - make -j$CPU_COUNT
+    - make install
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ stdlib('c') }}
+    - autoconf
+    - automake
+    - libtool
+    - pkg-config
+    - make
+    - gettext
+    - gnulib
+    - coreutils
+    - bc
+
+  host:
+    - libdevmapper
+    - libuuid
+  run:
+    - libdevmapper
+    - libuuid
+  run_exports:
+    - ${{ pin_subpackage(name, upper_bound="x.x") }}
+
+tests:
+  - script:
+      - test -f $PREFIX/lib/libparted.so
+      - test -f $PREFIX/lib/pkgconfig/libparted.pc
+      - pkg-config --modversion libparted
+      - parted --version

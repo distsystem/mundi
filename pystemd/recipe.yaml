@@ -1,0 +1,49 @@
+# Python bindings for systemd via D-Bus
+# Enables programmatic control of systemd services
+context:
+  git_url: https://github.com/systemd/pystemd
+  git_tag: v0.14.0
+  name: pystemd
+  version: ${{ git_tag[1:] }}
+  build_number: 0
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  git: ${{ git_url }}
+  tag: ${{ git_tag }}
+
+build:
+  number: ${{ build_number }}
+  script:
+    - pip install . -vv
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - pkg-config
+  host:
+    - python
+    - pip
+    - cython
+    - setuptools
+    - libsystemd
+  run:
+    - python
+    - libsystemd
+    - lxml
+    - psutil
+
+tests:
+  - python:
+      imports:
+        - pystemd
+        - pystemd.systemd1
+
+about:
+  homepage: ${{ git_url }}
+  license: LGPL-2.1-or-later
+  license_file: LICENSE
+  summary: A systemd binding for python

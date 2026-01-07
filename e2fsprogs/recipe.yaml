@@ -1,0 +1,64 @@
+# e2fsprogs - Ext2/3/4 filesystem utilities and libraries
+# Standard utilities for creating, fixing, configuring, and debugging ext filesystems
+# Reference: https://e2fsprogs.sourceforge.net/
+# Upstream: https://git.kernel.org/pub/scm/fs/ext2/e2fsprogs.git
+#
+# Build notes:
+# - Disabled libuuid/libblkid (provided by util-linux)
+# - Disabled uuidd daemon (not needed for conda environment)
+# - Disabled fsck wrapper (system-level, conflicts with util-linux)
+context:
+  git_url: https://git.kernel.org/pub/scm/fs/ext2/e2fsprogs.git
+  git_tag: v1.47.3
+  name: e2fsprogs
+  version: ${{ git_tag[1:] }}
+  build_number: 1
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  git: ${{ git_url }}
+  tag: ${{ git_tag }}
+
+build:
+  number: ${{ build_number }}
+  script:
+    # Configure with shared libraries, disable features provided by util-linux
+    # Set crond-dir to $PREFIX/etc to avoid installing to system /etc/cron.d
+    - |
+      ./configure --prefix=$PREFIX \
+        --enable-elf-shlibs \
+        --disable-static \
+        --disable-libuuid \
+        --disable-libblkid \
+        --disable-uuidd \
+        --disable-fsck \
+        --with-crond-dir=$PREFIX/etc/cron.d
+    - make -j$CPU_COUNT
+    - make install
+    - make install-libs
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ stdlib('c') }}
+    - autoconf >=2.54
+    - autoconf-archive
+    - automake
+    - libtool
+    - pkg-config
+    - make
+    - gettext
+  host:
+    - util-linux
+  run_exports:
+    - ${{ pin_subpackage(name, upper_bound="x.x") }}
+
+tests:
+  - script:
+      - test -f $PREFIX/lib/libext2fs.so
+      - test -f $PREFIX/lib/libcom_err.so
+      - mke2fs -V
+      - e2fsck -V

@@ -1,0 +1,42 @@
+context:
+  name: libsrtp2
+  git_url: https://github.com/cisco/libsrtp
+  git_tag: v2.7.0
+  version: ${{ git_tag[1:] }}
+  build_number: 1
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  - git: ${{ git_url }}
+    tag: ${{ git_tag }}
+
+build:
+  number: ${{ build_number }}
+  script:
+    - meson setup build --buildtype=release --prefix="${PREFIX}" --libdir=lib --wrap-mode=nofallback -Dtests=disabled -Ddoc=disabled -Dcrypto-library=openssl --pkg-config-path="${PREFIX}/lib/pkgconfig:${BUILD_PREFIX}/lib/pkgconfig"
+    - cd build
+    - ninja -j${CPU_COUNT}
+    - ninja install
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ stdlib('c') }}
+    - meson
+    - ninja
+    - pkg-config
+  host:
+    - openssl
+  run:
+    - openssl
+  run_exports:
+    - ${{ pin_subpackage(name, upper_bound='x.x') }}
+
+tests:
+  - script:
+      - pkg-config --modversion libsrtp2
+      - test -f ${PREFIX}/lib/libsrtp2.so
+      - test -f ${PREFIX}/include/srtp2/srtp.h

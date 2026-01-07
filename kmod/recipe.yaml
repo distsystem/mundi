@@ -1,0 +1,58 @@
+# Linux kernel module handling utilities and library (libkmod)
+# Provides tools like modprobe, insmod, rmmod, lsmod, modinfo, depmod
+# Reference: https://github.com/kmod-project/kmod
+context:
+  git_url: https://github.com/kmod-project/kmod.git
+  git_tag: v34
+  name: kmod
+  version: ${{ git_tag[1:] }}
+  build_number: 1
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  git: ${{ git_url }}
+  tag: ${{ git_tag }}
+
+build:
+  number: ${{ build_number }}
+  script:
+    - |
+      meson setup build $MESON_ARGS \
+        -Dtools=true \
+        -Dlogging=true \
+        -Ddebug-messages=false \
+        -Dbuild-tests=false \
+        -Dmanpages=false \
+        -Ddocs=false
+    - ninja -C build -j$CPU_COUNT
+    - ninja -C build install
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ stdlib('c') }}
+    - meson
+    - ninja
+    - pkg-config
+  host:
+    - zstd
+    - xz
+    - zlib
+    - openssl
+  run:
+    - zstd
+    - xz
+    - zlib
+    - openssl
+  run_exports:
+    - ${{ pin_subpackage(name, upper_bound="x.x") }}
+
+tests:
+  - script:
+      - test -f $PREFIX/lib/libkmod.so
+      - test -f $PREFIX/lib/pkgconfig/libkmod.pc
+      - pkg-config --modversion libkmod
+      - modinfo --version || true

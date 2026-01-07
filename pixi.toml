@@ -57,12 +57,12 @@ meta = { path = "../meta-forge", editable = true }
 
 
 [activation.env]
-RATTLER_BUILD_LOG_STYLE = "plain"
+# RATTLER_BUILD_LOG_STYLE = "plain"
 SCCACHE_CACHE_SIZE = "100G"
 CCACHE_DIR = "$HOME/.cache/ccache"
 CCACHE_KEEP_LOCAL_STORAGE = "TRUE"
 CONDA_OVERRIDE_CUDA = "12.9"
 S3_REGION = "us-east-1"
 S3_FORCE_PATH_STYLE = "true"
-RATTLER_BUILD_COLOR = "never"
+# RATTLER_BUILD_COLOR = "never"
 RATTLER_SHARDED = "false"

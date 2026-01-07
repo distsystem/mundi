@@ -1,0 +1,48 @@
+# Linux device-mapper userspace library
+# Part of LVM2 project, provides libdevmapper.so for managing device-mapper targets
+# Reference: https://sourceware.org/lvm2/
+context:
+  git_url: https://github.com/lvmteam/lvm2
+  git_tag: v2_03_38
+  name: libdevmapper
+  # Version format: v2_03_38 -> 2.03.38
+  version: ${{ git_tag[1:] | replace('_', '.') }}
+  build_number: 0
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  git: ${{ git_url }}
+  tag: ${{ git_tag }}
+
+build:
+  number: ${{ build_number }}
+  script:
+    # Build only device-mapper, not full LVM2
+    - ./configure --prefix=$PREFIX --disable-selinux --enable-pkgconfig
+    - make device-mapper -j$CPU_COUNT
+    - make install_device-mapper
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ stdlib('c') }}
+    - autoconf
+    - automake
+    - libtool
+    - pkg-config
+    - make
+  host:
+    - libaio
+  run:
+    - libaio
+  run_exports:
+    - ${{ pin_subpackage(name, upper_bound="x.x") }}
+
+tests:
+  - script:
+      - test -f $PREFIX/lib/libdevmapper.so
+      - test -f $PREFIX/lib/pkgconfig/devmapper.pc
+      - pkg-config --modversion devmapper

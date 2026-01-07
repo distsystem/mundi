@@ -1,0 +1,48 @@
+context:
+  name: libnice
+  git_url: https://github.com/libnice/libnice
+  git_tag: 0.1.22
+  version: ${{ git_tag }}
+  build_number: 2
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  - git: ${{ git_url }}
+    tag: ${{ git_tag }}
+
+build:
+  number: ${{ build_number }}
+  script:
+    - meson setup build --buildtype=release --prefix="${PREFIX}" --libdir=lib --wrap-mode=nofallback -Dgtk_doc=disabled -Dtests=disabled -Dexamples=disabled -Dintrospection=disabled -Dgupnp=disabled -Dgstreamer=enabled --pkg-config-path="${PREFIX}/lib/pkgconfig:${BUILD_PREFIX}/lib/pkgconfig"
+    - cd build
+    - ninja -j${CPU_COUNT}
+    - ninja install
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ stdlib('c') }}
+    - meson
+    - ninja
+    - pkg-config
+  host:
+    - gstreamer
+    - glib
+    - zlib
+    - gnutls
+  run:
+    - glib
+    - gnutls
+    - ${{ pin_compatible("gstreamer", upper_bound="x.x") }}
+  run_exports:
+    - ${{ pin_subpackage(name, upper_bound='x.x') }}
+
+tests:
+  - script:
+      - pkg-config --modversion nice
+      - test -f ${PREFIX}/lib/libnice.so
+      - gst-inspect-1.0 nice
+

@@ -1,0 +1,80 @@
+context:
+  git_url: https://github.com/stevegrubb/libcap-ng
+  git_tag: v0.8.5
+  name: ${{ git_url | split('/') | last }}
+  version: ${{ git_tag[1:]}}
+  build_number: 1
+
+recipe:
+  name: ${{ name }}
+  version: ${{ version }}
+
+cache:
+  source:
+    - git: ${{ git_url }}
+      tag: ${{ git_tag }}
+
+  build:
+    script:
+      - ./autogen.sh
+      - ./configure --help
+      - ./configure --prefix=$PREFIX
+      - make -j${CPU_COUNT}
+      - make install
+
+  requirements:
+    build:
+      - ${{ compiler('c') }}
+      - ${{ stdlib('c') }}
+      - autoconf
+      - automake
+      - make
+      - pkg-config
+      - libtool
+      - gettext
+      - swig
+    host:
+      - python
+    ignore_run_exports:
+      from_package:
+        - ${{ compiler('c') }}
+        - python
+
+outputs:
+  - package:
+      name: capng
+    requirements:
+      run:
+        - python
+        - ${{ pin_subpackage(name, exact=True) }}
+    build:
+      noarch: python
+      number: ${{ build_number }}
+      files:
+        include:
+          - lib/python*
+    tests:
+      - python:
+          imports:
+            - capng
+          python_version: ["3.10.*"]
+      - script:
+          interpreter: python
+          content: |
+            import capng
+            capng.capng_clear(capng.CAPNG_SELECT_BOTH)
+            capng.capng_apply(capng.CAPNG_SELECT_BOTH)
+  - package:
+      name: ${{ name }}
+    requirements:
+      run:
+        - ${{ pin_subpackage(name, lower_bound="x.x.x", upper_bound="x.x.x") }}
+      run_exports:
+        - ${{ pin_subpackage(name, lower_bound="x.x.x", upper_bound="x.x.x") }}
+    build:
+      number: ${{ build_number }}
+      files:
+        include:
+          - "*"
+        exclude:
+          - lib/python*

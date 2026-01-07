@@ -11,9 +11,6 @@ platforms = ["linux-64"]
 version = "0.1.0"
 
 [tasks]
-# Version management
-update = "meta version"
-
 # Authentication with prefix.dev
 auth = "pixi auth login prefix.dev --token $PREFIX_API_KEY"
 
@@ -24,20 +21,8 @@ cache = "mkdir -p $HOME/.cache/ccache && mkdir -p $HOME/.cache/sccache && (ccach
 cmd = "meta build {{package}}"
 args = ["package"]
 
-[tasks.build-upload]
-cmd = "meta build {{package}} --upload"
-args = ["package"]
-
 [tasks.build-dev]
 cmd = "meta build --dev {{package}}"
-args = ["package"]
-
-[tasks.build-sandbox]
-cmd = "meta build --sandbox {{package}}"
-args = ["package"]
-
-[tasks.build-dry]
-cmd = "meta build --dry-run {{package}}"
 args = ["package"]
 
 [tasks.clean]
@@ -49,20 +34,11 @@ cmd = "meta build {{package}} --skip-existing none"
 depends-on = [{ task = "clean", args = ["{{package}}"] }]
 args = ["package"]
 
-
 [tasks.upload]
 cmd = "meta upload"
 
 [tasks.index]
 cmd = "rattler-index s3 s3://pytorch"
-
-[tasks.delete]
-cmd = "meta delete --package {{package}}"
-args = ["package"]
-
-[tasks.sync]
-cmd = "meta sync"
-depends-on = ["cache"]
 
 [tasks.clean-output]
 cmd = "rm -rf output/linux-64 output/noarch output/broken"
@@ -75,10 +51,10 @@ py-rattler-build = "*"
 gh = "*"
 patch = ">=2.7.6,<3"
 rattler-index = "*"
-pulumi = "*"
 
 [pypi-dependencies]
-meta = { git = "https://github.com/distsystem/meta-forge" }
+meta = { path = "../meta-forge", editable = true }
+
 
 [activation.env]
 RATTLER_BUILD_LOG_STYLE = "plain"

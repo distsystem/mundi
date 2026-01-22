@@ -1,0 +1,67 @@
+# nsjail - Lightweight process isolation tool using Linux namespaces
+# Uses cgroups, rlimits and seccomp-bpf for sandboxing
+# Includes embedded kafel library for BPF policy specification
+# Reference: https://github.com/google/nsjail
+context:
+  git_url: https://github.com/google/nsjail.git
+  # Use master branch as 3.4 has protobuf API compatibility issues
+  # Commit 4cd66bc includes fix for protobuf 4.x LogHandler removal
+  git_rev: 4cd66bcb0ab2318ace8e14779395e5c9dcc15871
+  name: nsjail
+  version: "3.4.post1"
+  build_number: 0
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  - git: ${{ git_url }}
+    rev: ${{ git_rev }}
+
+build:
+  number: ${{ build_number }}
+  skip:
+    - win
+    - osx
+  script:
+    # kafel uses -Werror, which fails with GCC 14's stricter checks
+    # Patch kafel's Makefile to remove -Werror
+    - sed -i 's/-Werror//g' kafel/build/Makefile.mk
+
+    # Build with system protobuf and libnl
+    - make -j$CPU_COUNT
+
+    # Install binary manually (no install target in Makefile)
+    - install -Dm755 nsjail $PREFIX/bin/nsjail
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - ${{ stdlib('c') }}
+    - make
+    - pkg-config
+    - bison
+    - flex
+    - git
+  host:
+    - protobuf
+    - libnl
+    - libprotobuf
+
+tests:
+  - script:
+      - nsjail --help
+      - test -x $PREFIX/bin/nsjail
+
+about:
+  homepage: ${{ git_url }}
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Lightweight process isolation tool using Linux namespaces
+  description: |
+    NsJail is a lightweight process isolation tool that utilizes Linux namespaces,
+    cgroups, rlimits and seccomp-bpf syscall filters for sandboxing.
+    It leverages the Kafel BPF language for enhanced security capabilities.
+  repository: ${{ git_url }}

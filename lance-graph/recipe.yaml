@@ -1,0 +1,56 @@
+# Rust + Python (maturin) 项目
+# Python 包通过 PyO3 绑定 Rust 实现的 Cypher 图查询引擎
+context:
+  git_url: https://github.com/lance-format/lance-graph
+  git_tag: v0.4.0
+  name: lance-graph
+  version: ${{ git_tag[1:] }}
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  - git: ${{ git_url }}
+    tag: ${{ git_tag }}
+
+build:
+  python:
+    version_independent: true
+  script:
+    - cd python
+    - pip install . -vv --no-build-isolation
+
+requirements:
+  build:
+    - ${{ compiler("rust") }}
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+    - pkg-config
+  host:
+    - python
+    - pip
+    - maturin >=1.4
+    - libprotobuf
+  run:
+    - python
+    - pyarrow
+    - pylance
+    - pyyaml
+    - fsspec
+  ignore_run_exports:
+    from_package:
+      - libprotobuf
+
+tests:
+  - python:
+      imports:
+        - lance_graph
+      pip_check: false
+
+about:
+  homepage: ${{ git_url }}
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Cypher-capable graph query engine for multimodal knowledge graphs
+  repository: ${{ git_url }}

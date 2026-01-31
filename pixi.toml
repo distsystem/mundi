@@ -47,6 +47,7 @@ py-rattler-build = "*"
 gh = "*"
 patch = ">=2.7.6,<3"
 rattler-index = "*"
+lance-graph = "*"
 
 [pypi-dependencies]
 meta = { path = "../meta-forge", editable = true }

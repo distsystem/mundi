@@ -1,0 +1,6 @@
+apiVersion: nue/v1
+mounts:
+  - source: ./
+    exclude: []
+  - source: ../meta-forge/src/meta
+    dest: src/meta

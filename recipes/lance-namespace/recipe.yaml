@@ -1,0 +1,63 @@
+# Lance Namespace: interface/plugin registry + urllib3 REST client
+# Two pure Python noarch packages from one git source
+context:
+  git_url: https://github.com/lancedb/lance-namespace.git
+  git_tag: v0.4.5
+  version: ${{ git_tag[1:] }}
+
+recipe:
+  name: lance-namespace
+  version: ${{ version }}
+
+source:
+  - git: ${{ git_url }}
+    tag: ${{ git_tag }}
+
+outputs:
+  - package:
+      name: lance-namespace-urllib3-client
+    build:
+      noarch: python
+      script:
+        - cd python/lance_namespace_urllib3_client
+        - pip install . -vv
+    requirements:
+      host:
+        - python >=3.8
+        - pip
+        - hatchling
+      run:
+        - python >=3.8
+        - pydantic >=2
+        - python-dateutil >=2.8.2
+        - typing-extensions >=4.7.1
+        - urllib3 >=1.25.3,<3.0.0
+    tests:
+      - python:
+          imports:
+            - lance_namespace_urllib3_client
+
+  - package:
+      name: lance-namespace
+    build:
+      noarch: python
+      script:
+        - cd python/lance_namespace
+        - pip install . -vv
+    requirements:
+      host:
+        - python >=3.8
+        - pip
+        - hatchling
+      run:
+        - python >=3.8
+        - ${{ pin_subpackage("lance-namespace-urllib3-client", exact=True) }}
+    tests:
+      - python:
+          imports:
+            - lance_namespace
+
+about:
+  homepage: ${{ git_url }}
+  license: Apache-2.0
+  summary: Lance Namespace interface and plugin registry

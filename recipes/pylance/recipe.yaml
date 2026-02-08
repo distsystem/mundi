@@ -1,7 +1,7 @@
 context:
   name: pylance
   git_url: https://github.com/lancedb/lance.git
-  git_tag: v2.0.0-rc.4
+  git_tag: v2.0.0
   version: ${{ git_tag[1:] | replace("-",".") }}
 
 package:
@@ -11,12 +11,13 @@ package:
 source:
   - git: ${{ git_url }}
     tag: ${{ git_tag }}
+    patches:
+      - commit.patch
 
 build:
   python:
     version_independent: true
   script:
-    - git restore .
     - cd python
     - pip install . -vv
 

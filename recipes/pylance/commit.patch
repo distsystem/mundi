@@ -1,0 +1,151 @@
+diff --git a/python/python/lance/dataset.py b/python/python/lance/dataset.py
+index 97a9a0c6775..0e835047439 100644
+--- a/python/python/lance/dataset.py
++++ b/python/python/lance/dataset.py
+@@ -3352,6 +3352,7 @@ def commit(
+         max_retries: int = 20,
+         *,
+         commit_message: Optional[str] = None,
++        enable_stable_row_ids: Optional[bool] = None,
+     ) -> LanceDataset:
+         """Create a new version of dataset
+ 
+@@ -3413,6 +3414,13 @@ def commit(
+         commit_message: str, optional
+             A message to associate with this commit. This message will be stored in the
+             dataset's metadata and can be retrieved using read_transaction().
++        enable_stable_row_ids: bool, optional
++            If True, enables stable row IDs for the dataset.  Stable row IDs mean
++            that each row will have a unique id that is not based on its position
++            in the dataset.  Instead, a monotonically increasing id will be assigned
++            to each row as it is added to the dataset.  This is useful when building
++            indices or when rows need a persistent identity across compaction and
++            other maintenance operations.
+ 
+         Returns
+         -------
+@@ -3482,6 +3490,7 @@ def commit(
+                 enable_v2_manifest_paths=enable_v2_manifest_paths,
+                 detached=detached,
+                 max_retries=max_retries,
++                enable_stable_row_ids=enable_stable_row_ids,
+             )
+         elif isinstance(operation, LanceOperation.BaseOperation):
+             new_ds = _Dataset.commit(
+@@ -3495,6 +3504,7 @@ def commit(
+                 detached=detached,
+                 max_retries=max_retries,
+                 commit_message=commit_message,
++                enable_stable_row_ids=enable_stable_row_ids,
+             )
+         else:
+             raise TypeError(
+diff --git a/python/python/lance/lance/__init__.pyi b/python/python/lance/lance/__init__.pyi
+index d976bea8cf4..4e2849c4b49 100644
+--- a/python/python/lance/lance/__init__.pyi
++++ b/python/python/lance/lance/__init__.pyi
+@@ -372,6 +372,7 @@ class _Dataset:
+         enable_v2_manifest_paths: Optional[bool] = None,
+         detached: Optional[bool] = None,
+         max_retries: Optional[int] = None,
++        enable_stable_row_ids: Optional[bool] = None,
+         **kwargs,
+     ) -> _Dataset: ...
+     @staticmethod
+diff --git a/python/python/tests/test_dataset.py b/python/python/tests/test_dataset.py
+index c5915aad4a3..33fb828a3ab 100644
+--- a/python/python/tests/test_dataset.py
++++ b/python/python/tests/test_dataset.py
+@@ -4697,6 +4697,36 @@ def test_commit_message_and_get_properties(tmp_path):
+     )
+ 
+ 
++def test_commit_with_stable_row_ids(tmp_path: Path):
++    """Test that commit() with enable_stable_row_ids creates stable row IDs."""
++    base_uri = str(tmp_path)
++    table = pa.table({"a": range(10)})
++
++    # Create dataset via commit with Overwrite and enable_stable_row_ids
++    fragments = lance.fragment.write_fragments(table, base_uri)
++    operation = lance.LanceOperation.Overwrite(table.schema, fragments)
++    ds = lance.LanceDataset.commit(
++        base_uri,
++        operation,
++        enable_stable_row_ids=True,
++    )
++
++    # Append more data
++    table2 = pa.table({"a": range(10, 20)})
++    fragments2 = lance.fragment.write_fragments(table2, base_uri)
++    ds = lance.LanceDataset.commit(
++        base_uri,
++        lance.LanceOperation.Append(fragments2),
++        read_version=ds.version,
++    )
++
++    # Verify row IDs are sequential (stable row IDs assign monotonic IDs)
++    result = ds.scanner(with_row_id=True).to_table()
++    assert len(result) == 20
++    row_ids = [result["_rowid"][i].as_py() for i in range(20)]
++    assert row_ids == list(range(20))
++
++
+ def test_table_metadata_updates(tmp_path: Path):
+     """Test table metadata incremental updates and full replacement."""
+     arr = pa.array([1, 2, 3])
+diff --git a/python/src/dataset.rs b/python/src/dataset.rs
+index b4b4d8af050..915b9661bd6 100644
+--- a/python/src/dataset.rs
++++ b/python/src/dataset.rs
+@@ -2196,7 +2196,7 @@ impl Dataset {
+ 
+     #[allow(clippy::too_many_arguments)]
+     #[staticmethod]
+-    #[pyo3(signature = (dest, operation, read_version = None, commit_lock = None, storage_options = None, storage_options_provider = None, enable_v2_manifest_paths = None, detached = None, max_retries = None, commit_message = None))]
++    #[pyo3(signature = (dest, operation, read_version = None, commit_lock = None, storage_options = None, storage_options_provider = None, enable_v2_manifest_paths = None, detached = None, max_retries = None, commit_message = None, enable_stable_row_ids = None))]
+     fn commit(
+         dest: PyWriteDest,
+         operation: PyLance<Operation>,
+@@ -2208,6 +2208,7 @@ impl Dataset {
+         detached: Option<bool>,
+         max_retries: Option<u32>,
+         commit_message: Option<String>,
++        enable_stable_row_ids: Option<bool>,
+     ) -> PyResult<Self> {
+         let mut transaction = Transaction::new(read_version.unwrap_or_default(), operation.0, None);
+ 
+@@ -2227,13 +2228,14 @@ impl Dataset {
+             enable_v2_manifest_paths,
+             detached,
+             max_retries,
++            enable_stable_row_ids,
+         )
+     }
+ 
+     #[allow(clippy::too_many_arguments)]
+     #[allow(deprecated)]
+     #[staticmethod]
+-    #[pyo3(signature = (dest, transaction, commit_lock = None, storage_options = None, storage_options_provider = None, enable_v2_manifest_paths = None, detached = None, max_retries = None))]
++    #[pyo3(signature = (dest, transaction, commit_lock = None, storage_options = None, storage_options_provider = None, enable_v2_manifest_paths = None, detached = None, max_retries = None, enable_stable_row_ids = None))]
+     fn commit_transaction(
+         dest: PyWriteDest,
+         transaction: PyLance<Transaction>,
+@@ -2243,6 +2245,7 @@ impl Dataset {
+         enable_v2_manifest_paths: Option<bool>,
+         detached: Option<bool>,
+         max_retries: Option<u32>,
++        enable_stable_row_ids: Option<bool>,
+     ) -> PyResult<Self> {
+         let accessor = crate::storage_options::create_accessor_from_python(
+             storage_options.clone(),
+@@ -2272,6 +2275,10 @@ impl Dataset {
+             .with_detached(detached.unwrap_or(false))
+             .with_max_retries(max_retries.unwrap_or(20));
+ 
++        if let Some(enable) = enable_stable_row_ids {
++            builder = builder.use_stable_row_ids(enable);
++        }
++
+         if let Some(store_params) = object_store_params {
+             builder = builder.with_store_params(store_params);
+         }

@@ -84,6 +84,12 @@ jobs:
 
       - uses: ./.github/pixi-setup
 
+      - uses: distsystem/expose-pixi-apps@main
+        with:
+          git: https://github.com/distsystem/nuefs.git
+          apps: "[nue, nuefsd]"
+          environment: build
+
       - uses: actions/cache@v4
         with:
           path: |

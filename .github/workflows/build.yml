@@ -97,7 +97,9 @@ jobs:
 
       - name: Mount workspace
         run: |
-          sudo apt-get install -y -qq fuse > /dev/null
+          sudo modprobe fuse || true
+          sudo apt-get install -y -qq fuse3 > /dev/null
+          ls -la /dev/fuse || echo "/dev/fuse not found"
           nue mount
 
       - uses: ./.github/pixi-setup

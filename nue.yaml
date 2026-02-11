@@ -1,6 +1,11 @@
 apiVersion: nue/v1
 mounts:
   - source: ./
+    vcs: false
     exclude: []
-  - source: ../meta-forge/src/meta
-    dest: src/meta
+  - source: ../meta-forge/
+    exclude:
+      - pixi*
+      - .github
+      - .gitignore
+      - .gitattributes

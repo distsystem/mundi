@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
     inputs:
       package_name:
-        description: "Specify a package name to build (skips change detection)"
+        description: "Package directory to build (e.g. recipes/pylance)"
         required: false
         type: string
   pull_request:
@@ -42,7 +42,7 @@ jobs:
         id: build-matrix
         run: |
           if [[ -n "${{ github.event.inputs.package_name }}" ]]; then
-            # Manual trigger with specific package
+            # Manual trigger: specific package
             PACKAGES='["${{ github.event.inputs.package_name }}"]'
           elif [[ -n "${{ steps.changed-files.outputs.all_changed_files }}" ]]; then
             # Convert space-separated dirs to JSON array

@@ -82,13 +82,16 @@ jobs:
       - name: Clone meta-forge
         run: gh repo clone distsystem/meta-forge ../meta-forge -- --depth 1
 
-      - uses: ./.github/pixi-setup
-
       - uses: distsystem/expose-pixi-apps@main
         with:
           git: https://github.com/distsystem/nuefs.git
           apps: "[nue, nuefsd]"
           environment: build
+
+      - name: Mount workspace
+        run: nue mount
+
+      - uses: ./.github/pixi-setup
 
       - uses: actions/cache@v4
         with:

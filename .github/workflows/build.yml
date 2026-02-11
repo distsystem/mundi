@@ -96,7 +96,9 @@ jobs:
           environment: build
 
       - name: Mount workspace
-        run: nue mount
+        run: |
+          sudo apt-get install -y -qq fuse > /dev/null
+          nue mount
 
       - uses: ./.github/pixi-setup
 

@@ -97,9 +97,14 @@ jobs:
 
       - name: Mount workspace
         run: |
-          sudo modprobe fuse || true
           sudo apt-get install -y -qq fuse3 > /dev/null
-          ls -la /dev/fuse || echo "/dev/fuse not found"
+          echo "uid=$(id -u) XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR"
+          ls -la /run/user/$(id -u)/ 2>&1 || true
+          nuefsd --socket /tmp/nuefsd-test.sock --log /dev/stderr &
+          NUEFSD_PID=$!
+          sleep 2
+          kill $NUEFSD_PID 2>/dev/null || true
+          wait $NUEFSD_PID 2>/dev/null || true
           nue mount
 
       - uses: ./.github/pixi-setup

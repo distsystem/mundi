@@ -98,8 +98,11 @@ jobs:
       - name: Mount workspace
         run: |
           sudo apt-get install -y -qq fuse3 > /dev/null
-          timeout 3 nuefsd --socket /tmp/nuefsd-diag.sock --log - 2>&1 || true
-          cat /run/user/$(id -u)/nuefsd.log 2>/dev/null || cat /tmp/nuefsd.log 2>/dev/null || echo "no nuefsd log found"
+          which nuefsd && file "$(readlink -f "$(which nuefsd)")"
+          ls -la /home/runner/work/_temp/expose-pixi-apps/nuefs/.pixi/envs/build/bin/nuefsd 2>&1 || true
+          ldd /home/runner/work/_temp/expose-pixi-apps/nuefs/.pixi/envs/build/bin/nuefsd 2>&1 || true
+          /home/runner/work/_temp/expose-pixi-apps/nuefs/.pixi/envs/build/bin/nuefsd --help 2>&1 || true
+          RUST_LOG=debug timeout 3 nuefsd --socket /tmp/nuefsd-diag.sock --log - 2>&1 || true
           nue mount
 
       - uses: ./.github/pixi-setup

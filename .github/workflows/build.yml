@@ -103,19 +103,7 @@ jobs:
       - name: Setup project
         run: |
           git config --global url."https://x-access-token:${GITHUB_TOKEN}@github.com/".insteadOf "https://github.com/"
-          echo "=== CWD: $(pwd) ==="
-          echo "=== ls -la pyproject.toml ==="
-          ls -la pyproject.toml
-          echo "=== sha256sum pyproject.toml ==="
-          sha256sum pyproject.toml
-          echo "=== cat pixi.toml ==="
-          cat pixi.toml
-          echo "=== head -5 pixi.lock ==="
-          head -5 pixi.lock
-          echo "=== pixi install --locked -v ==="
-          pixi install --locked -v 2>&1 || true
-          echo "=== pixi install (without --locked) ==="
-          pixi install
+          pixi install --locked
           echo "$(pwd)/.pixi/envs/default/bin" >> "$GITHUB_PATH"
 
       - uses: actions/cache@v4

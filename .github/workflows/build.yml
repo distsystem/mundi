@@ -89,17 +89,11 @@ jobs:
           pixi-url: https://github.com/fecet/pixi/releases/download/{{version}}/{{pixiFile}}
           run-install: false
 
-      - name: Build nuefsd
-        run: |
-          git clone --depth 1 https://github.com/distsystem/nuefs.git $RUNNER_TEMP/nuefs
-          pixi install --manifest-path $RUNNER_TEMP/nuefs/pixi.toml
-          pixi install --manifest-path $RUNNER_TEMP/nuefs/pixi.toml -e build
-          pixi run --manifest-path $RUNNER_TEMP/nuefs/pixi.toml -e build develop
-
       - uses: distsystem/expose-pixi-apps@main
         with:
           git: https://github.com/distsystem/nuefs.git
           apps: "[nue, nuefsd]"
+          run: develop
 
       - name: Mount workspace
         run: |

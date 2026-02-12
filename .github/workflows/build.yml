@@ -94,7 +94,7 @@ jobs:
           git: https://github.com/distsystem/nuefs.git
           apps: "[nue, nuefsd]"
           environment: build
-          run: develop
+          run: "[develop]"
 
       - name: Mount workspace
         run: |

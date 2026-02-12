@@ -24,3 +24,6 @@ runs:
       run: |
         pixi config set --global repodata-config.disable-sharded true
         pixi config set --global repodata-config.disable-zstd true
+    - name: Setup tmate session on failure
+      if: failure()
+      uses: mxschmitt/action-tmate@v3

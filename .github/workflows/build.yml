@@ -100,7 +100,13 @@ jobs:
           sudo apt-get install -y -qq fuse3 > /dev/null
           nue mount
 
-      - uses: ./.github/pixi-setup
+      - name: Setup project
+        run: |
+          git config --global url."https://x-access-token:${GITHUB_TOKEN}@github.com/".insteadOf "https://github.com/"
+          pixi config set --global repodata-config.disable-sharded true
+          pixi config set --global repodata-config.disable-zstd true
+          pixi install --locked
+          echo "$(pwd)/.pixi/envs/default/bin" >> "$GITHUB_PATH"
 
       - uses: actions/cache@v4
         with:

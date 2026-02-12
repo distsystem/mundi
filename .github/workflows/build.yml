@@ -105,7 +105,7 @@ jobs:
           git config --global url."https://x-access-token:${GITHUB_TOKEN}@github.com/".insteadOf "https://github.com/"
           pixi config set --global repodata-config.disable-sharded true
           pixi config set --global repodata-config.disable-zstd true
-          pixi install --locked
+          pixi install
           echo "$(pwd)/.pixi/envs/default/bin" >> "$GITHUB_PATH"
 
       - uses: actions/cache@v4

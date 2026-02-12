@@ -102,17 +102,8 @@ jobs:
 
       - name: Setup project
         run: |
-          echo "=== pwd ===" && pwd
-          echo "=== ls ===" && ls -la
-          echo "=== ls src ===" && ls -la src/ 2>&1 || true
-          echo "=== cat pyproject.toml ===" && cat pyproject.toml 2>&1 || true
-          echo "=== cat pixi.toml ===" && cat pixi.toml 2>&1 || true
-          echo "=== cat .git ===" && cat .git 2>&1 || true
           git config --global url."https://x-access-token:${GITHUB_TOKEN}@github.com/".insteadOf "https://github.com/"
-          pixi config set --global repodata-config.disable-sharded true
-          pixi config set --global repodata-config.disable-zstd true
-          rm -f pixi.lock
-          pixi install
+          pixi install --locked
           echo "$(pwd)/.pixi/envs/default/bin" >> "$GITHUB_PATH"
 
       - uses: actions/cache@v4

@@ -85,7 +85,7 @@ jobs:
       - name: Install pixi
         uses: prefix-dev/setup-pixi@v0.8.13
         with:
-          pixi-version: v0.62.2
+          pixi-version: v0.63.2
           pixi-url: https://github.com/fecet/pixi/releases/download/{{version}}/{{pixiFile}}
           run-install: false
 

@@ -123,6 +123,17 @@ jobs:
             pixi run build ${{ matrix.package }}
           fi
 
-      - name: Setup tmate session on failure
+      - name: Setup Tailscale
         if: failure()
-        uses: mxschmitt/action-tmate@v3
+        uses: tailscale/github-action@v3
+        with:
+          oauth-client-id: ${{ env.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ env.TS_OAUTH_SECRET }}
+          tags: tag:ci
+      - name: Start SSH and wait for debug
+        if: failure()
+        shell: bash
+        run: |
+          sudo systemctl start ssh
+          echo "::notice::SSH into runner: ssh runner@$(tailscale ip -4)"
+          sleep 18000

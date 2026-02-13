@@ -140,9 +140,7 @@ jobs:
         if: failure()
         shell: bash
         run: |
-          mkdir -p ~/.ssh
-          curl -sL https://github.com/${{ github.actor }}.keys >> ~/.ssh/authorized_keys
-          chmod 700 ~/.ssh && chmod 600 ~/.ssh/authorized_keys
+          echo runner:ci-debug | sudo chpasswd
           sudo systemctl start ssh
-          echo "::notice::SSH into runner: ssh runner@$(tailscale ip -4)"
+          echo "::notice::SSH into runner: ssh runner@$(tailscale ip -4) (password: ci-debug)"
           sleep 18000

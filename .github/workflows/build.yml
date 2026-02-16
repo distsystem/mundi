@@ -82,23 +82,20 @@ jobs:
       - name: Clone meta-forge
         run: gh repo clone distsystem/meta-forge ../meta-forge -- --depth 1
 
-      - name: Install pixi
-        uses: prefix-dev/setup-pixi@v0.8.13
+      - uses: distsystem/nuefs/.github/actions/setup-nuefs@main
         with:
-          pixi-version: v0.63.2
-          pixi-url: https://github.com/fecet/pixi/releases/download/{{version}}/{{pixiFile}}
-          run-install: false
-
-      - uses: distsystem/expose-pixi-apps@main
-        with:
-          git: https://github.com/distsystem/nuefs.git
-          apps: "[nue, nuefsd]"
-          run: develop
-
-      - name: Mount workspace
-        run: |
-          sudo apt-get install -y -qq fuse3 > /dev/null
-          nue mount
+          manifest-content: |
+            apiVersion: nue/v1
+            mounts:
+              - source: ./
+                vcs: false
+                exclude: []
+              - source: ../meta-forge/
+                exclude:
+                  - pixi*
+                  - .github
+                  - .gitignore
+                  - .gitattributes
 
       - name: Setup project
         run: |

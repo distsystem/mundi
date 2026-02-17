@@ -97,10 +97,7 @@ jobs:
                   - .gitignore
                   - .gitattributes
 
-      - name: Setup project
-        run: |
-          gh auth setup-git
-          pixi install --frozen
+      - uses: ./.github/pixi-setup
 
       - uses: actions/cache@v4
         with:
@@ -119,24 +116,24 @@ jobs:
             pixi run build ${{ matrix.package }}
           fi
 
-      - name: Debug ESC vars
-        if: failure()
-        shell: bash
-        run: |
-          echo "TS_OAUTH_CLIENT_ID is set: ${{ env.TS_OAUTH_CLIENT_ID != '' }}"
-          echo "TS_OAUTH_SECRET is set: ${{ env.TS_OAUTH_SECRET != '' }}"
-      - name: Setup Tailscale
-        if: failure()
-        uses: tailscale/github-action@v3
-        with:
-          oauth-client-id: ${{ env.TS_OAUTH_CLIENT_ID }}
-          oauth-secret: ${{ env.TS_OAUTH_SECRET }}
-          tags: tag:ci
-      - name: Start SSH and wait for debug
-        if: failure()
-        shell: bash
-        run: |
-          echo runner:ci-debug | sudo chpasswd
-          sudo systemctl start ssh
-          echo "::notice::SSH into runner: ssh runner@$(tailscale ip -4) (password: ci-debug)"
-          sleep 18000
+      # - name: Debug ESC vars
+      #   if: failure()
+      #   shell: bash
+      #   run: |
+      #     echo "TS_OAUTH_CLIENT_ID is set: ${{ env.TS_OAUTH_CLIENT_ID != '' }}"
+      #     echo "TS_OAUTH_SECRET is set: ${{ env.TS_OAUTH_SECRET != '' }}"
+      # - name: Setup Tailscale
+      #   if: failure()
+      #   uses: tailscale/github-action@v3
+      #   with:
+      #     oauth-client-id: ${{ env.TS_OAUTH_CLIENT_ID }}
+      #     oauth-secret: ${{ env.TS_OAUTH_SECRET }}
+      #     tags: tag:ci
+      # - name: Start SSH and wait for debug
+      #   if: failure()
+      #   shell: bash
+      #   run: |
+      #     echo runner:ci-debug | sudo chpasswd
+      #     sudo systemctl start ssh
+      #     echo "::notice::SSH into runner: ssh runner@$(tailscale ip -4) (password: ci-debug)"
+      #     sleep 18000

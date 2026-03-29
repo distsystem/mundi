@@ -1,6 +1,6 @@
 context:
   git_url: https://github.com/distsystem/parakernel.git
-  git_tag: v0.3.1
+  git_tag: v0.4.1
   name: "parakernel"
 
 source:

@@ -6,12 +6,14 @@ runs:
     - name: Configure Git for private repos
       if: ${{ env.GITHUB_TOKEN != '' }}
       shell: bash
-      run: |
-        git config --global url."https://x-access-token:${GITHUB_TOKEN}@github.com/".insteadOf "https://github.com/"
+      run: gh auth setup-git
+      env:
+        GH_TOKEN: ${{ env.GITHUB_TOKEN }}
     - name: Setup pixi
       uses: prefix-dev/setup-pixi@v0.8.13
       with:
-        pixi-version: v0.62.2
+        # Relative editable path dependencies like ../meta-forge need a newer pixi.
+        pixi-version: v0.66.0
         pixi-url: https://github.com/fecet/pixi/releases/download/{{version}}/{{pixiFile}}
         run-install: true
         cache: true

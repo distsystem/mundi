@@ -50,7 +50,7 @@ rattler-index = "*"
 lance-graph = "*"
 
 [pypi-dependencies]
-meta = { path = ".", editable = true }
+meta = { path = "../meta-forge", editable = true }
 
 [feature.dev.dependencies]
 pulumi = "*"

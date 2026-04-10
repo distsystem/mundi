@@ -1,7 +1,7 @@
 context:
   name: certifi
   git_url: https://github.com/certifi/python-certifi.git
-  git_tag: 2025.08.03
+  git_tag: 2026.02.25
 
 package:
   name: ${{ name|lower }}

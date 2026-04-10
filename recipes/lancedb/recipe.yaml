@@ -1,0 +1,69 @@
+# Rust + Python (maturin) 项目
+# LanceDB Python SDK: PyO3 绑定 Rust 实现的向量数据库客户端
+# Rust 依赖通过 Cargo 从 git 获取 lance 生态 crates，构建时需要网络访问
+# aws-lc-sys 的 jitterentropy 要求 -O0，但 conda CFLAGS 注入 -O2 导致冲突
+# 强制使用 cmake 构建路径，cmake 能正确处理 per-target 优化级别
+context:
+  git_url: https://github.com/lancedb/lancedb
+  git_tag: python-v0.30.2
+  name: lancedb
+  version: ${{ git_tag | split("-v") | last }}
+  build_number: 0
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  - git: ${{ git_url }}
+    tag: ${{ git_tag }}
+
+build:
+  number: ${{ build_number }}
+  python:
+    version_independent: true
+  script:
+    env:
+      AWS_LC_SYS_CMAKE_BUILDER: "1"
+    content:
+      - cd python
+      - pip install . -vv --no-build-isolation
+
+requirements:
+  build:
+    - ${{ compiler("rust") }}
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+    - cmake
+    - pkg-config
+  host:
+    - python
+    - pip
+    - maturin >=1.4
+    - libprotobuf
+  run:
+    - python
+    - deprecation
+    - numpy
+    - packaging
+    - pyarrow
+    - pydantic
+    - tqdm
+    - lance-namespace
+    - pylance
+  ignore_run_exports:
+    from_package:
+      - libprotobuf
+
+tests:
+  - python:
+      imports:
+        - lancedb
+      pip_check: false
+
+about:
+  homepage: ${{ git_url }}
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Serverless, low-latency vector database for AI applications
+  repository: ${{ git_url }}

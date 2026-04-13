@@ -1,0 +1,104 @@
+# Google OR-Tools: built from source with CMake + pybind11
+# Use conda packages for most C++ deps; fetch pybind11 family (patched)
+# and COIN-OR (CoinUtils not on conda-forge) from source
+# OR_TOOLS_PATCH set explicitly because shallow clone can't count commits
+context:
+  git_url: https://github.com/google/or-tools
+  git_tag: v9.15
+  name: ortools
+  version: "9.15.6755"
+  build_number: 0
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  - git: ${{ git_url }}
+    tag: ${{ git_tag }}
+
+build:
+  number: ${{ build_number }}
+  script:
+    content:
+      - cmake -B build -G Ninja ${CMAKE_ARGS}
+        -DCMAKE_BUILD_TYPE=Release
+        -DBUILD_PYTHON=ON
+        -DBUILD_TESTING=OFF
+        -DBUILD_SAMPLES=OFF
+        -DBUILD_EXAMPLES=OFF
+        -DBUILD_DOC=OFF
+        -DGENERATE_PYTHON_STUB=OFF
+        -DFETCH_PYTHON_DEPS=OFF
+        -DUSE_GLPK=OFF
+        -DUSE_CPLEX=OFF
+        -DBUILD_DEPS=OFF
+        -DBUILD_ZLIB=OFF
+        -DBUILD_BZip2=OFF
+        -DBUILD_absl=OFF
+        -DBUILD_Protobuf=OFF
+        -DBUILD_re2=OFF
+        -DBUILD_Eigen3=OFF
+        -DBUILD_Boost=OFF
+        -DBUILD_pybind11=ON
+        -DBUILD_pybind11_abseil=ON
+        -DBUILD_pybind11_protobuf=ON
+        -DBUILD_CoinUtils=ON
+        -DBUILD_Osi=ON
+        -DBUILD_Clp=ON
+        -DBUILD_Cgl=ON
+        -DBUILD_Cbc=ON
+      - cmake --build build -j${CPU_COUNT}
+      - pip install build/python/dist/${{ name }}-*.whl -vv
+    env:
+      OR_TOOLS_PATCH: "6755"
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - ${{ stdlib('c') }}
+    - cmake >=3.25
+    - ninja
+    - git
+    - swig
+  host:
+    - python
+    - pip
+    - setuptools
+    - wheel
+    - mypy-protobuf
+    - typing-extensions >=4.12
+    # C++ deps from conda
+    - libboost-devel
+    - libzlib
+    - bzip2
+    - eigen =3.4.0
+    - libabseil
+    - libprotobuf
+    - re2
+    - scip
+    - soplex
+    - highs
+  run:
+    - python
+    - protobuf
+    - numpy >=2.0.2
+    - absl-py >=2.0.0
+    - immutabledict >=3.0.0
+    - pandas >=2.0.0
+
+tests:
+  - python:
+      imports:
+        - ortools
+        - ortools.sat.python.cp_model
+        - ortools.linear_solver.pywraplp
+      pip_check: false
+
+about:
+  homepage: https://developers.google.com/optimization/
+  repository: ${{ git_url }}
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Google OR-Tools python libraries and modules

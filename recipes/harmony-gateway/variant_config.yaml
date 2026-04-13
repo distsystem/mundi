@@ -1,0 +1,4 @@
+go_compiler:
+  - go
+go_compiler_version:
+  - 1.26

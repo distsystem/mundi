@@ -1,0 +1,25 @@
+context:
+  git_url: https://github.com/distsystem/difrost.git
+  git_tag: v0.6.1
+  name: "harmony-gateway"
+
+source:
+  - git: ${{ git_url }}
+    tag: ${{ git_tag }}
+
+package:
+  name: ${{ name }}
+  version: ${{ git_tag[1:] }}
+
+build:
+  script:
+    - go build -v -o $PREFIX/bin/${{ name }} ./cmd/harmony-renderd
+
+requirements:
+  build:
+    - ${{ compiler('go-nocgo') }}
+    - git
+
+tests:
+  - script:
+      - test -f $PREFIX/bin/${{ name }}

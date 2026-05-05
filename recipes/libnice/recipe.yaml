@@ -1,9 +1,9 @@
 context:
   name: libnice
   git_url: https://github.com/libnice/libnice
-  git_tag: 0.1.22
+  git_tag: 0.1.23
   version: ${{ git_tag }}
-  build_number: 2
+  build_number: 0
 
 package:
   name: ${{ name }}

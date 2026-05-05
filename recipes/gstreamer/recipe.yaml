@@ -1,8 +1,8 @@
 context:
   git_url: https://gitlab.freedesktop.org/gstreamer/gstreamer.git
-  git_tag: "1.26.3"
+  git_tag: "1.28.2"
   version: ${{ git_tag }}
-  build_number: 4
+  build_number: 7
 
 recipe:
   name: gstreamer-plugins
@@ -19,6 +19,12 @@ outputs:
     build:
       number: ${{ build_number }}
       script:
+        # conda-forge patches g-ir-scanner shebang to '#!/usr/bin/env python3'.
+        # Prepend host bin so 'env python3' resolves to the Python ABI that
+        # matches g-ir-scanner's compiled extension. setuptools supplies the
+        # distutils shim needed by giscanner on Python versions without stdlib
+        # distutils.
+        - export PATH="${PREFIX}/bin:${PATH}"
         - cd subprojects/gst-plugins-bad
         - mkdir -p build
         - cd build
@@ -31,9 +37,11 @@ outputs:
             --wrap-mode=nofallback \
             -Dexamples=disabled \
             -Dtests=disabled \
-            -Dintrospection=enabled \
             -Dorc=disabled \
-            -Dgpl=enabled
+            -Dgpl=enabled \
+            -Dwebrtc=enabled \
+            -Dsrtp=enabled \
+            -Ddtls=enabled
         - ninja -j${CPU_COUNT}
         - ninja install
     requirements:
@@ -46,13 +54,13 @@ outputs:
         - gettext
         - perl
         - libtool
-        - setuptools
-        - python
       host:
+        - python
+        - setuptools
+        - gobject-introspection
         - gstreamer ==${{ version }}
         - gst-plugins-base ==${{ version }}
         - glib
-        - gobject-introspection
         - libgl-devel
         - libegl-devel
         - libdrm
@@ -82,10 +90,14 @@ outputs:
       ignore_run_exports:
         from_package:
           - libxml2
+          - python
+          - gobject-introspection
     tests:
       - script:
           - gst-inspect-1.0 webrtc
+          - gst-inspect-1.0 webrtcbin
           - gst-inspect-1.0 srtp
+          - gst-inspect-1.0 dtls
 
   - package:
       name: gst-plugins-ugly
@@ -118,13 +130,10 @@ outputs:
         - gettext
         - perl
         - libtool
-        - setuptools
-        - python
       host:
         - gstreamer ==${{ version }}
         - gst-plugins-base ==${{ version }}
         - glib
-        - gobject-introspection
         - libxml2
         - zlib
         - x264

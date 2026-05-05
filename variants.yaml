@@ -8,3 +8,5 @@ cdt_name:
   - conda
 python:
   - 3.12
+libprotobuf:
+  - "6.31"
